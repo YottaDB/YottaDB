@@ -57,7 +57,7 @@ rhdtyp *make_dmode (void)
 	rhdtyp		*base_address;
 	lab_tabent	*lbl;
 	lnr_tabent	*lnr;
-	CODEBUF_TYPE	*code;
+	CODE_TYPE	*code;
 	dyn_modes	*dmode;
 	int algnd_rtnhdr_size = (int)ROUND_UP2(SIZEOF(rhdtyp), SECTION_ALIGN_BOUNDARY);
 	int algnd_code_size   = (int)ROUND_UP2(CODE_SIZE, NATIVE_WSIZE);
@@ -81,7 +81,7 @@ rhdtyp *make_dmode (void)
 						  algnd_code_size + algnd_lnrtab_size);
 	base_address->lnrtab_len = CODE_LINES;
 	base_address->labtab_len = 1;
-	code = (CODEBUF_TYPE *)base_address->ptext_adr;	/* start of executable code */
+	code = (CODE_TYPE *)base_address->ptext_adr;	/* start of executable code */
 	GEN_CALL(dmode->func_ptr1);			/* line 0,1 */
 	GEN_CALL(dmode->func_ptr2);
 	GEN_CALL(dmode->func_ptr3); 			/* line 2 */

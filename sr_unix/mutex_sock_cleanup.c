@@ -1,6 +1,9 @@
 /****************************************************************
  *								*
- *	Copyright 2001, 2009 Fidelity Information Services, Inc	*
+ * Copyright 2001, 2009 Fidelity Information Services, Inc	*
+ *								*
+ * Copyright (c) 2018 YottaDB LLC. and/or its subsidiaries.	*
+ * All rights reserved.						*
  *								*
  *	This source code contains the intellectual property	*
  *	of its copyright holder(s), and is made available	*
@@ -44,8 +47,7 @@ void mutex_sock_cleanup(void)
 	/* Close the mutex wake socket */
 	if (FD_INVALID != mutex_sock_fd)
 		CLOSEFILE_RESET(mutex_sock_fd, rc);	/* resets "mutex_sock_fd" to FD_INVALID */
-	if ((NULL != mutex_sock_address.sun_path) && (-1 == UNLINK(mutex_sock_address.sun_path))
-		&& (ENOENT != errno))
+	if (('\0' != mutex_sock_address.sun_path[0]) && (-1 == UNLINK(mutex_sock_address.sun_path)) && (ENOENT != errno))
 	{
 		save_errno = errno;
 		send_msg(VARLSTCNT(11) ERR_MUTEXERR, 0, ERR_TEXT, 2, RTS_ERROR_TEXT("unlinking socket"),

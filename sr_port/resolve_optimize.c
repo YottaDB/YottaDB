@@ -3,6 +3,9 @@
  * Copyright (c) 2001-2016 Fidelity National Information	*
  * Services, Inc. and/or its subsidiaries. All rights reserved.	*
  *								*
+ * Copyright (c) 2018 YottaDB LLC. and/or its subsidiaries.	*
+ * All rights reserved.						*
+ *								*
  *	This source code contains the intellectual property	*
  *	of its copyright holder(s), and is made available	*
  *	under a license.  If you do not know the terms of	*
@@ -161,7 +164,6 @@ boolean_t resolve_optimize(triple *curtrip)
 		curtrip->opcode = OC_LIT;
 		put_lit_s(&tmp_mval, curtrip);
 		label->opcode = OC_NOOP;
-		line_offset = OC_NOOP;
 		routine->opcode = OC_NOOP;
 		optimized = TRUE;
 		break;

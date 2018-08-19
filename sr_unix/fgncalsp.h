@@ -162,6 +162,6 @@ void 		fgncal_getstr(mstr *inp, mstr *str);
 void 		fgncal_lkbind(mstr *inp);
 void 		fgn_glopref(mval *v);
 struct extcall_package_list 	*exttab_parse (mval *package);
-callin_entry_list		*citab_parse (int internal);
+callin_entry_list		*citab_parse (boolean_t internal);
 
 #endif

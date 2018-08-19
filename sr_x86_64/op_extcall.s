@@ -17,6 +17,7 @@
 	.include "g_msf.si"
 	.include "gtm_threadgbl_deftypes_asm.si"
 #	include "debug.si"
+#	include "ydbmerrors.h"
 
 #
 # op_extcall calls an external GT.M MUMPS routine with no arguments. If the routine
@@ -45,10 +46,11 @@
 #
 # Note we use %r12 as a flag that we don't do more than one of auto_zlink() OR auto_relink_check()
 # call. This keeps us out of any possible loop condition as only one or the other should
-# ever be necessary. Register %r12 is also known as REG_LITERAL_BASE and is saved by the putframe
+# ever be necessary. Register %r12 is also known as %r12 and is saved by the putframe
 # macro so we need not save it separately.
 #
 	.data
+	.extern	_ERR_GTMCHECK
 	.extern	frame_pointer
 	.extern gtm_threadgbl
 
@@ -67,34 +69,34 @@ SAVE_SIZE	= 16
 
 ENTRY	op_extcall
 	putframe						# Save registers into current M stack frame (includes %r12)
-	addq    $8, REG_SP     					# Burn the saved return pc (also aligns stack to 16 bytes)
+	addq    $8, %rsp     					# Burn the saved return pc (also aligns stack to 16 bytes)
 	CHKSTKALIGN						# Verify stack alignment
-	subq	$SAVE_SIZE, REG_SP				# Allocate save area on stack (16 byte aligned)
+	subq	$SAVE_SIZE, %rsp				# Allocate save area on stack (16 byte aligned)
 	movq	$0, %r12					# Init flag - We haven't done auto_zlink/auto_relink_check
-	movslq	REG32_ARG1, REG64_ARG1				# Sign extend arg1
-	movq	REG64_ARG1, stack_arg1(REG_SP)			# Save index args
-	movq	REG64_ARG0, stack_arg0(REG_SP)
+	movslq	%esi, %rsi					# Sign extend arg1
+	movq	%rsi, stack_arg1(%rsp)				# Save index args
+	movq	%rdi, stack_arg0(%rsp)
 	#
 	# First up, check the label index to see if tiz negative. If so, we must use lnk_proxy as a base address
 	# and pseudo linkagetable. Else use the caller's linkage table.
 	#
-	cmpq	$0, REG64_ARG1					# Use current frame linkage table or lnk_proxy?
+	cmpq	$0, %rsi					# Use current frame linkage table or lnk_proxy?
 	jge	loadandgo
 	#
 	# We have a negative index. Use lnk_proxy as a proxy linkage table.
 	#
-	movq	gtm_threadgbl(REG_IP), REG64_RET1		# REG64_RET1 contains threadgbl base
-	leaq	ggo_lnk_proxy(REG64_RET1), REG64_ACCUM		# -> lnk_proxy.rtnhdr_adr
-	cmpq	$0, REG64_ARG0					# Using proxy table, rtnhdr index must be 0
+	movq	gtm_threadgbl(%rip), %r10			# %r10 contains threadgbl base
+	leaq	ggo_lnk_proxy(%r10), %rax			# -> lnk_proxy.rtnhdr_adr
+	cmpq	$0, %rdi					# Using proxy table, rtnhdr index must be 0
 	jne	gtmcheck
-	movq	(REG64_ACCUM), REG64_ARG0			# -> rtnhdr
-	cmpq	$0, REG64_ARG0					# See if defined yet
+	movq	(%rax), %rdi					# -> rtnhdr
+	cmpq	$0, %rdi					# See if defined yet
 	je	gtmcheck					# If rhdaddr == 0, not yet linked into image which
 								# .. should never happen for indirects
-	cmpq	$-1, REG64_ARG1					# Using proxy table, label index must be -1
+	cmpq	$-1, %rsi					# Using proxy table, label index must be -1
 	jne	gtmcheck
-	leaq	8(REG64_ACCUM), REG64_ARG1			# -> label table code offset ptr
-	cmpq    $0, 0(REG64_ARG1)
+	leaq	8(%rax), %rsi					# -> label table code offset ptr
+	cmpq    $0, 0(%rsi)
         je      gtmcheck					# If labaddr == 0 && rhdaddr != 0, label does not exist
 								# .. which also should never happen for indirects
 	jmp	justgo						# Bypass autorelink check for indirects (done by caller)
@@ -102,12 +104,12 @@ ENTRY	op_extcall
 	# We have a non-negative index. Use args as indexes into caller's linkage table.
 	#
 loadandgo:
-	movq	msf_rvector_off(REG_FRAME_POINTER), REG64_RET0	# -> frame_pointer->rvector (rtnhdr)
-	movq	mrt_lnk_ptr(REG64_RET0), REG64_RET0		# -> frame_pointer->rvector->linkage_adr
-	shlq	$3, REG64_ARG0					# arg * 8 = offset for rtnhdr ptr
-	cmpq	$0, (REG64_RET0, REG64_ARG0)			# See if defined
+	movq	msf_rvector_off(%rbp), %rax			# -> frame_pointer->rvector (rtnhdr)
+	movq	mrt_lnk_ptr(%rax), %rax				# -> frame_pointer->rvector->linkage_adr
+	shlq	$3, %rdi					# arg * 8 = offset for rtnhdr ptr
+	cmpq	$0, (%rax, %rdi)				# See if defined
 	je	autozlink					# No - try auto-zlink
-	movq	(REG64_RET0, REG64_ARG0), REG64_ARG0		# -> rtnhdr
+	movq	(%rax, %rdi), %rdi				# -> rtnhdr
 	#
 	# Have rtnhdr to call now. If rtnhdr->zhist, we should do an autorelink check on this routine to see if it needs
 	# to be relinked. Only do this if %r12 is 0 meaning we haven't already done an autorelink check or if we just
@@ -115,26 +117,26 @@ loadandgo:
 	#
 	cmpq	$0, %r12					# Already checked/resolved?
 	jne	getlabeloff					# Yes, bypass this check and resolve the label offset
-	cmpq	$0, mrt_zhist(REG64_ARG0)			# See if we need to do an autorelink check
+	cmpq	$0, mrt_zhist(%rdi)				# See if we need to do an autorelink check
 	jne	autorelink_check				# Need autorelink check
 getlabeloff:
-	shlq	$3, REG64_ARG1					# arg * 8 = offset for label offset ptr
-	cmpq	$0, (REG64_RET0, REG64_ARG1)			# See if defined
+	shlq	$3, %rsi					# arg * 8 = offset for label offset ptr
+	cmpq	$0, (%rax, %rsi)				# See if defined
 	je	label_missing
-	movq	(REG_RET0, REG64_ARG1), REG64_ARG1		# -> label table code offset
+	movq	(%rax, %rsi), %rsi				# -> label table code offset
 	#
 	# Create stack frame and invoke routine
 	#
 justgo:
-	movq	0(REG64_ARG1), REG64_ACCUM			# &(code_offset) for this label (usually & of lntabent)
-	cmpq	$0, REG64_ACCUM
+	movq	0(%rsi), %rax					# &(code_offset) for this label (usually & of lntabent)
+	cmpq	$0, %rax
 	je	label_missing
-	movslq	0(REG64_ACCUM), REG64_ARG2			# Code offset for this label
-	addq	mrt_ptext_adr(REG64_ARG0), REG64_ARG2		# Transfer address: codebase reg + offset to label
-	movq	mrt_lnk_ptr(REG64_ARG0), REG64_ARG1		# Linkage table address (context pointer)
+	movslq	0(%rax), %rdx					# Code offset for this label
+	addq	mrt_ptext_adr(%rdi), %rdx			# Transfer address: codebase reg + offset to label
+	movq	mrt_lnk_ptr(%rdi), %rsi				# Linkage table address (context pointer)
 	call	new_stack_frame
 retlab:								# If error, return to caller, else "return" to callee
-	addq	$SAVE_SIZE, REG_SP				# Undo save area bump
+	addq	$SAVE_SIZE, %rsp				# Undo save area bump
 	getframe						# Sets regs (including %r12) as they should be for new frame
 	ret
 
@@ -144,10 +146,10 @@ retlab:								# If error, return to caller, else "return" to callee
 autozlink:
 	cmpq	$0, %r12					# Already did autorelink or autorelink check?
 	jne	gtmcheck
-	movq	stack_arg0(REG_SP), REG64_ARG0			# Get index arg back
+	movq	stack_arg0(%rsp), %rdi				# Get index arg back
 	call	auto_zlink
-	movq	stack_arg0(REG_SP), REG64_ARG0			# Restore both args after call
-	movq	stack_arg1(REG_SP), REG64_ARG1
+	movq	stack_arg0(%rsp), %rdi				# Restore both args after call
+	movq	stack_arg1(%rsp), %rsi
 	movq	$1, %r12
 	jmp	loadandgo
 
@@ -157,11 +159,11 @@ autozlink:
 autorelink_check:
 	cmpq	$0, %r12					# Already did autorelink or autorelink check?
 	jne	gtmcheck
-	movq	stack_arg0(REG_SP), REG64_ARG0			# Restore both args as parms for call
-	movq	stack_arg1(REG_SP), REG64_ARG1
-	call	auto_relink_check				# REG64_ARG0 still populated by rtnhdr
-	movq	stack_arg0(REG_SP), REG64_ARG0			# Restore both args after call
-	movq	stack_arg1(REG_SP), REG64_ARG1
+	movq	stack_arg0(%rsp), %rdi				# Restore both args as parms for call
+	movq	stack_arg1(%rsp), %rsi
+	call	auto_relink_check				# %rdi still populated by rtnhdr
+	movq	stack_arg0(%rsp), %rdi				# Restore both args after call
+	movq	stack_arg1(%rsp), %rsi
 	movq	$2, %r12
 	jmp	loadandgo
 
@@ -170,19 +172,21 @@ autorelink_check:
 # occurs
 #
 gtmcheck:
-	movl	$ERR_GTMCHECK, REG32_ARG1
-	movl	$1, REG32_ARG0
-	movb    $0, REG8_ACCUM					# Variable length argument
+	movl	ERR_GTMCHECK(%rip), %esi
+	movl	$1, %edi
+	movb    $0, %al						# Variable length argument
 	call	rts_error
 	jmp	retlab
 
 #
-# Make call so we can raise the appropriate LABELMISSING error for the not-found label.
+# Make call so we can raise the appropriate LABELMISSING error _for the not-found label.
 #
 label_missing:
-	movq	stack_arg1(REG_SP), REG64_ARG0			# Index to linkage table and to linkage name table
+	movq	stack_arg1(%rsp), %rdi			# Index to linkage table and to linkage name table
 	call	laberror
 	jmp	retlab
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

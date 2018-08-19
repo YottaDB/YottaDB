@@ -41,152 +41,154 @@ loop		= -32
 FRAME_SIZE	= 40					# Includes 8 bytes padding to 16 byte align stack
 
 ENTRY	op_forloop
-	movq	frame_pointer(REG_IP), REG64_SCRATCH1
-	popq	msf_mpc_off(REG64_SCRATCH1)
+	movq	frame_pointer(%rip), %r11
+	popq	msf_mpc_off(%r11)
 	pushq	%rbp					# Save %rbp (aka GTM_FRAME_POINTER)
-	movq	REG_SP, %rbp				# Copy of stack pointer
-	subq	$FRAME_SIZE, REG_SP			# Create save area that leaves stack 16 byte aligned
+	movq	%rsp, %rbp				# Copy of stack pointer
+	subq	$FRAME_SIZE, %rsp			# Create save area that leaves stack 16 byte aligned
 	CHKSTKALIGN					# Verify stack alignment
 	#
 	# Save the arguments on stack
 	#
-        movq	REG64_ARG3, loop(%rbp)
-        movq	REG64_ARG2, term(%rbp)
-        movq	REG64_ARG1, step(%rbp)
-        movq	REG64_ARG0, indx(%rbp)
-	movq	REG64_ARG0, REG64_ARG1
-	mv_force_defined_strict REG64_ARG1, l0		# Disregard NOUNDEF - errors if not defined
-	mv_force_num REG64_ARG1, l1
-	movq	indx(%rbp), REG64_ARG1
-	movq	step(%rbp), REG64_ARG0
-	movw	mval_w_mvtype(REG64_ARG1), REG16_ACCUM
-	movw	mval_w_mvtype(REG64_ARG0), REG16_ARG2
-	andw	REG16_ARG2, REG16_ACCUM
-	testw	$mval_m_int_without_nm, REG16_ACCUM
+        movq	%rcx, loop(%rbp)
+        movq	%rdx, term(%rbp)
+        movq	%rsi, step(%rbp)
+        movq	%rdi, indx(%rbp)
+	movq	%rdi, %rsi
+	mv_force_defined_strict %rsi, l0		# Disregard NOUNDEF - errors if not defined
+	mv_force_num %rsi, l1
+	movq	indx(%rbp), %rsi
+	movq	step(%rbp), %rdi
+	movw	mval_w_mvtype(%rsi), %ax
+	movw	mval_w_mvtype(%rdi), %dx
+	andw	%dx, %ax
+	testw	$mval_m_int_without_nm, %ax
 	je	L66
-	movl	mval_l_m1(REG64_ARG1), REG32_ACCUM
-	addl	mval_l_m1(REG64_ARG0), REG32_ACCUM
-	cmpl	$MANT_HI, REG32_ACCUM
+	movl	mval_l_m1(%rsi), %eax
+	addl	mval_l_m1(%rdi), %eax
+	cmpl	$MANT_HI, %eax
 	jge	L68
-	cmpl	$-MANT_HI, REG32_ACCUM
+	cmpl	$-MANT_HI, %eax
 	jle	L67
-	movw	$mval_m_int, mval_w_mvtype(REG64_ARG1)
-	movl	REG32_ACCUM, mval_l_m1(REG64_ARG1)
+	movw	$mval_m_int, mval_w_mvtype(%rsi)
+	movl	%eax, mval_l_m1(%rsi)
 	jmp	L63
 L67:
-	movb	$mval_esign_mask, mval_b_exp(REG64_ARG1) # Set sign bit
-	negl	REG32_ACCUM
+	movb	$mval_esign_mask, mval_b_exp(%rsi) # Set sign bit
+	negl	%eax
 	jmp	L69
 L68:
-	movb	$0, mval_b_exp(REG64_ARG1)		# Clear sign bit
+	movb	$0, mval_b_exp(%rsi)		# Clear sign bit
 L69:
-	movw	$mval_m_nm, mval_w_mvtype(REG64_ARG1)
-	orb	$69, mval_b_exp(REG64_ARG1)		# Set exponent field
-	movl	REG32_ACCUM, REG32_SCRATCH1
-	movl	$0, REG32_ARG2
-	idivl	ten_dd(REG_IP), REG32_ACCUM
-	movl	REG32_ACCUM, mval_l_m1(REG64_ARG1)
-	imull	$10, REG32_ACCUM, REG32_ACCUM
-	subl	REG32_ACCUM, REG32_SCRATCH1
-	imull	$MANT_LO, REG32_SCRATCH1, REG32_SCRATCH1
-	movl	REG32_SCRATCH1, mval_l_m0(REG64_ARG1)
+	movw	$mval_m_nm, mval_w_mvtype(%rsi)
+	orb	$69, mval_b_exp(%rsi)		# Set exponent field
+	movl	%eax, %r11d
+	movl	$0, %edx
+	idivl	ten_dd(%rip), %eax
+	movl	%eax, mval_l_m1(%rsi)
+	imull	$10, %eax, %eax
+	subl	%eax, %r11d
+	imull	$MANT_LO, %r11d, %r11d
+	movl	%r11d, mval_l_m0(%rsi)
 	jmp	L63
 L66:
-	movq	REG64_ARG1, REG64_ARG3
-	movl	$0, REG32_ARG2
-	movq	REG64_ARG0, REG64_ARG1
-	movq	REG64_ARG3, REG64_ARG0
+	movq	%rsi, %rcx
+	movl	$0, %edx
+	movq	%rdi, %rsi
+	movq	%rcx, %rdi
 	call	add_mvals
-	movq	indx(%rbp), REG64_ARG1
+	movq	indx(%rbp), %rsi
 L63:
-	movq	step(%rbp), REG64_ARG0
-	testw	$mval_m_int_without_nm, mval_w_mvtype(REG64_ARG0)
+	movq	step(%rbp), %rdi
+	testw	$mval_m_int_without_nm, mval_w_mvtype(%rdi)
 	jne	a
-	cmpb	$0, mval_b_exp(REG64_ARG0)
+	cmpb	$0, mval_b_exp(%rdi)
 	jl	b
 	jmp	a2
 a:
-	cmpl	$0, mval_l_m1(REG64_ARG0)
+	cmpl	$0, mval_l_m1(%rdi)
 	jl	b
 a2:
-	movq	term(%rbp), REG64_ARG0
+	movq	term(%rbp), %rdi
 	jmp	e
 b:
-	movq	REG64_ARG1, REG64_ARG0			# If step is negative, reverse compare
-	movq	term(%rbp), REG64_ARG1
+	movq	%rsi, %rdi			# If step is negative, reverse compare
+	movq	term(%rbp), %rsi
 e:
 	#
 	# Compare indx and term
 	#
-	movw	mval_w_mvtype(REG64_ARG1), REG16_ACCUM
-	movw	mval_w_mvtype(REG64_ARG0), REG16_ARG2
-	andw	REG16_ARG2, REG16_ACCUM
-	testw	$2, REG16_ACCUM
+	movw	mval_w_mvtype(%rsi), %ax
+	movw	mval_w_mvtype(%rdi), %dx
+	andw	%dx, %ax
+	testw	$2, %ax
 	je	ccmp
-	movl	mval_l_m1(REG64_ARG1), REG32_ACCUM
-	subl	mval_l_m1(REG64_ARG0), REG32_ACCUM
+	movl	mval_l_m1(%rsi), %eax
+	subl	mval_l_m1(%rdi), %eax
 	jmp	tcmp
 ccmp:
-	xchgq	REG64_ARG0, REG64_ARG1
+	xchgq	%rdi, %rsi
 	call	numcmp
-	cmpl	$0, REG32_ACCUM
+	cmpl	$0, %eax
 tcmp:
 	jle	newiter
-	movq	indx(%rbp), REG64_ARG1
-	movq	step(%rbp), REG64_ARG0
-	movw	mval_w_mvtype(REG64_ARG1), REG16_ACCUM
-	movw	mval_w_mvtype(REG64_ARG0), REG16_ARG2
-	andw	REG16_ARG2, REG16_ACCUM
-	testw	$mval_m_int_without_nm, REG16_ACCUM
+	movq	indx(%rbp), %rsi
+	movq	step(%rbp), %rdi
+	movw	mval_w_mvtype(%rsi), %ax
+	movw	mval_w_mvtype(%rdi), %dx
+	andw	%dx, %ax
+	testw	$mval_m_int_without_nm, %ax
 	je	l66
-	movl	mval_l_m1(REG64_ARG1), REG32_ACCUM
-	subl	mval_l_m1(REG64_ARG0), REG32_ACCUM
-	cmpl	$MANT_HI, REG32_ACCUM
+	movl	mval_l_m1(%rsi), %eax
+	subl	mval_l_m1(%rdi), %eax
+	cmpl	$MANT_HI, %eax
 	jge	l68
-	cmpl	$-MANT_HI, REG32_ACCUM
+	cmpl	$-MANT_HI, %eax
 	jle	l67
-	movw	$mval_m_int, mval_w_mvtype(REG64_ARG1)
-	movl	REG32_ACCUM, mval_l_m1(REG64_ARG1)
+	movw	$mval_m_int, mval_w_mvtype(%rsi)
+	movl	%eax, mval_l_m1(%rsi)
 	jmp	done
 l67:
-	movb	$mval_esign_mask, mval_b_exp(REG64_ARG1) # Set sign bit
-	negl	REG32_ACCUM
+	movb	$mval_esign_mask, mval_b_exp(%rsi) # Set sign bit
+	negl	%eax
 	jmp	l69
 l68:
-	movb	$0, mval_b_exp(REG64_ARG1)		# Clear sign bit
+	movb	$0, mval_b_exp(%rsi)		# Clear sign bit
 l69:
-	movw	$mval_m_nm, mval_w_mvtype(REG64_ARG1)
-	orb	$69, mval_b_exp(REG64_ARG1)
-	movl	REG32_ACCUM, REG32_SCRATCH1
-	movl	$0, REG32_ARG2				# Set edx to 0 before div
-	idivl	ten_dd(REG_IP), REG32_ACCUM
-	movl	REG32_ACCUM, mval_l_m1(REG64_ARG1)
-	imull	$10, REG32_ACCUM, REG32_ACCUM
-	subl	REG32_ACCUM, REG32_SCRATCH1
-	imull	$MANT_LO, REG32_SCRATCH1, REG32_SCRATCH1
-	movl	REG32_SCRATCH1, mval_l_m0(REG64_ARG1)
+	movw	$mval_m_nm, mval_w_mvtype(%rsi)
+	orb	$69, mval_b_exp(%rsi)
+	movl	%eax, %r11d
+	movl	$0, %edx				# Set edx to 0 before div
+	idivl	ten_dd(%rip), %eax
+	movl	%eax, mval_l_m1(%rsi)
+	imull	$10, %eax, %eax
+	subl	%eax, %r11d
+	imull	$MANT_LO, %r11d, %r11d
+	movl	%r11d, mval_l_m0(%rsi)
 	jmp	done
 l66:
-	movq	REG64_ARG1, REG64_ARG3
-	movl	$1, REG32_ARG2
-	movq	REG64_ARG0, REG64_ARG1
-	movq	REG64_ARG3, REG64_ARG0			# First and fourth args are same
+	movq	%rsi, %rcx
+	movl	$1, %edx
+	movq	%rdi, %rsi
+	movq	%rcx, %rdi			# First and fourth args are same
 	call	add_mvals
 done:
-	movq	%rbp, REG_SP				# Unwind save frame
+	movq	%rbp, %rsp				# Unwind save frame
 	popq	%rbp					# Restore caller's %rbp
-	movq	frame_pointer(REG_IP), REG64_SCRATCH1
-	pushq	msf_mpc_off(REG64_SCRATCH1)		# End of loop - return to caller
+	movq	frame_pointer(%rip), %r11
+	pushq	msf_mpc_off(%r11)		# End of loop - return to caller
 	ret
 newiter:
 	#
 	# Return to loop return address for another iteration
 	#
-	movq	loop(%rbp), REG64_SCRATCH1		# Save loop return address
-	movq	%rbp, REG_SP				# Unwind save frame
+	movq	loop(%rbp), %r11		# Save loop return address
+	movq	%rbp, %rsp				# Unwind save frame
 	popq	%rbp					# Restore caller's %rbp
-	pushq	REG64_SCRATCH1				# Set return address
+	pushq	%r11				# Set return address
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

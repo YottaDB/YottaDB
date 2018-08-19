@@ -15,7 +15,7 @@
 #define GTCM_SYSENV_H
 
 #if !(defined(SUNOS) || defined(_AIX) || defined(__hpux) || defined(__linux__) || defined(__osf__) || defined(__MVS__)	\
-		|| defined(__CYGWIN__))
+		|| defined(__CYGWIN__) || defined (__APPLE__))
 #	error	Unsupported Platform	/*  Unknown/unspecified system.  Should NOT compile */
 #endif
 

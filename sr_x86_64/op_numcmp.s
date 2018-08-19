@@ -31,14 +31,16 @@
 	.extern	numcmp
 
 ENTRY	op_numcmp
-	subq	$8, REG_SP			# Bump stack for 16 byte alignment
+	subq	$8, %rsp			# Bump stack for 16 byte alignment
 	CHKSTKALIGN				# Verify stack alignment
-	movq	REG64_RET1, REG64_ARG1
-	movq	REG64_RET0, REG64_ARG0
+	movq	%r10, %rsi
+	movq	%rax, %rdi
 	call	numcmp
-	addq	$8, REG_SP			# Remove stack alignment bump
-	cmpq	$0, REG64_ACCUM			# Set flags according to result from numcmp
+	addq	$8, %rsp			# Remove stack alignment bump
+	cmpq	$0, %rax			# Set flags according to result from numcmp
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

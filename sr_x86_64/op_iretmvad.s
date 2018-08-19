@@ -25,15 +25,17 @@
 
 ENTRY	op_iretmvad
 	putframe
-	addq    $8, REG_SP		# Burn return PC and 16 byte align stack
-	subq	$16, REG_SP		# Bump stack for 16 byte alignment and a save area
+	addq    $8, %rsp		# Burn return PC and 16 byte align stack
+	subq	$16, %rsp		# Bump stack for 16 byte alignment and a save area
 	CHKSTKALIGN			# Verify stack alignment
-	movq	REG64_RET1, 0(REG_SP)	# Save input mval* value across call to op_unwind
+	movq	%r10, 0(%rsp)
 	call	op_unwind
-	movq	0(REG_SP), REG64_RET0	# Return input parameter via REG64_RET0
-	addq	$16, REG_SP		# Unwind C frame save area
+	movq	0(%rsp), %rax		# Return input parameter
+	addq	$16, %rsp		# Unwind C frame save area
 	getframe			# Pick up new stack frame regs & push return addr
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

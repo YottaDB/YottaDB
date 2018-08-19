@@ -29,7 +29,7 @@
 # op_callsp - Used to build a new stack level for argumentless DO (also saves $TEST)
 #
 # Argument:
-#	REG64_ARG0 - Value from OCNT_REF triple that contains the byte offset from the return address
+#	%rdi - Value from OCNT_REF triple that contains the byte offset from the return address
 #		     to return to when the level pops.
 #
 # Note this routine calls exfun_frame() instead of copy_stack_frame() because this routine needs to provide a
@@ -38,19 +38,21 @@
 ENTRY	op_callspl
 ENTRY	op_callspw
 ENTRY	op_callspb
-	movq	(REG_SP), REG64_ACCUM			# Save return addr in reg
-	subq	$8, REG_SP				# Bump stack for 16 byte alignment
+	movq	(%rsp), %rax			# Save return addr in reg
+	subq	$8, %rsp				# Bump stack for 16 byte alignment
 	CHKSTKALIGN					# Verify stack alignment
-	movq	frame_pointer(REG_IP), REG64_SCRATCH1
-	movq	REG64_ACCUM, msf_mpc_off(REG64_SCRATCH1) # Save return addr in M frame
-	addq	REG64_ARG0, msf_mpc_off(REG64_SCRATCH1) # Add in return offset
+	movq	frame_pointer(%rip), %r11
+	movq	%rax, msf_mpc_off(%r11) # Save return addr in M frame
+	addq	%rdi, msf_mpc_off(%r11) # Add in return offset
 	call	exfun_frame				# Copies stack frame and creates new temps
-	movl	dollar_truth(REG_IP), REG32_ARG0
+	movl	dollar_truth(%rip), %edi
 	call	push_tval
-	movq	frame_pointer(REG_IP), REG_FRAME_POINTER
-	movq	msf_temps_ptr_off(REG_FRAME_POINTER), REG_FRAME_TMP_PTR
-	addq	$8, REG_SP				# Remove stack alignment bump
+	movq	frame_pointer(%rip), %rbp
+	movq	msf_temps_ptr_off(%rbp), %r14
+	addq	$8, %rsp				# Remove stack alignment bump
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

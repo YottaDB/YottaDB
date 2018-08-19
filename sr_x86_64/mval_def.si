@@ -82,10 +82,10 @@ top			=	16
 .macro  mv_force_defined mval, label
         testw   $(mval_m_str+mval_m_nm), mval_w_mvtype(\mval)
         jne     \label
-        movq    \mval, REG64_ARG0
-	movb	$0, REG8_ACCUM	#variable argument list
+        movq    \mval, %rdi
+	movb	$0, %al	#variable argument list
         call    underr
-        movq    REG64_RET0, \mval
+        movq    %rax, \mval
 \label:
 .endm
 
@@ -95,8 +95,8 @@ top			=	16
 .macro  mv_force_defined_strict mval, label
 	testw   $(mval_m_str+mval_m_nm), mval_w_mvtype(\mval)
 	jne     \label
-	movq    \mval, REG64_ARG0
-	movb	$0, REG8_ACCUM	#variable argument list
+	movq    \mval, %rdi
+	movb	$0, %al	#variable argument list
 	call    underr_strict
 \label:
 .endm
@@ -107,7 +107,7 @@ top			=	16
 .macro	mv_force_str mval, label
 	testw	$mval_m_str, mval_w_mvtype(\mval)
 	jne	\label
-	movq	\mval, REG64_ARG0
+	movq	\mval, %rdi
 	call	n2s
 \label:
 .endm
@@ -118,7 +118,7 @@ top			=	16
 .macro	mv_force_num	mval, label
 	testw	$mval_m_nm, mval_w_mvtype(\mval)
 	jne	\label
-	movq	\mval, REG64_ARG0
+	movq	\mval, %rdi
 	call	s2n
 \label:
 .endm
@@ -129,7 +129,7 @@ top			=	16
 .macro	mv_force_str_if_num_approx mval, label
 	testw	$mval_m_num_approx, mval_w_mvtype(\mval)
 	je	\label
-	movq	\mval, REG64_ARG0
+	movq	\mval, %rdi
 	call	n2s
 \label:
 .endm
@@ -223,9 +223,9 @@ top			=	16
 	jne	\tmp_label2
 	jmp	\mainlabel
 \tmp_label1:
-	movq	\mval, REG64_ARG0
+	movq	\mval, %rdi
 	call	val_iscan
-	cmpl	$0, REG32_RET0
+	cmpl	$0, %eax
 	jne	\mainlabel
 
 \tmp_label2:

@@ -131,7 +131,7 @@ MBSTART {								\
 /* Versions of the OPEN* macros that cause the file descriptor to be closed before an EXEC. */
 
 /* If the platform really supports O_CLOEXEC use it in the OPEN */
-#if defined(O_CLOEXEC) && !defined(_AIX) && !defined(__sparc)
+#if defined(O_CLOEXEC) && !defined(_AIX) && !defined(__sparc) && !defined(__APPLE__)
 #define OPEN_CLOEXEC(FNAME, FFLAGS, FDESC)	\
 MBSTART {					\
 	FDESC = OPEN(FNAME, FFLAGS | O_CLOEXEC);\
@@ -259,6 +259,11 @@ MBSTART {													\
 #	define	O_DIRECT_FLAGS				(O_DIRECT | O_DSYNC)
 #endif
 #define OPENFILE_SYNC(FNAME, FFLAGS, FDESC)	OPENFILE(FNAME, FFLAGS | O_DIRECT_FLAGS, FDESC);
+
+#if defined(__APPLE__)
+#define O_DIRECT	0
+#define DIRECTIO_FLAG	0
+#endif
 
 #if defined( __linux__) || defined(__CYGWIN__)
 /* A special handling was needed for linux due to its inability to lock

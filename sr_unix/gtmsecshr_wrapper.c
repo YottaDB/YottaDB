@@ -43,7 +43,7 @@
 #include "gtm_syslog.h"
 #include "main_pragma.h"
 #include "gtm_signal.h"
-#ifndef __MVS__
+#if !defined(__MVS__) && !defined(__APPLE__)
 #  include <malloc.h>
 #endif
 #include <errno.h>
@@ -345,8 +345,9 @@ int main()
 	}
 	if (!ret)
 	{	/* clear all */
-#		if defined(SUNOS) || defined(__CYGWIN__)
-		environ = NULL;
+#		if defined(SUNOS) || defined (__CYGWIN__) || defined (__APPLE__) /* Fixed by OSE/SMH - environ = NULL causes failures later*/
+		char *clearenv = NULL;
+		environ = &clearenv;
           	status = 0;
 #		else
 		status = clearenv();

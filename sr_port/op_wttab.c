@@ -1,6 +1,9 @@
 /****************************************************************
  *								*
- *	Copyright 2001, 2004 Sanchez Computer Associates, Inc.	*
+ * Copyright 2001, 2004 Sanchez Computer Associates, Inc.	*
+ *								*
+ * Copyright (c) 2018 YottaDB LLC. and/or its subsidiaries.	*
+ * All rights reserved.						*
  *								*
  *	This source code contains the intellectual property	*
  *	of its copyright holder(s), and is made available	*
@@ -77,7 +80,7 @@ void op_wttab(mint col)
 		if (iod->wrap)
 		{
 			iod->dollar.x = col % iod->width;
-			assert(0 != iod->length || iod->dollar.y < iod->length);
+			assert((0 == iod->length) || (iod->dollar.y < iod->length));
 			iod->dollar.y += (col / iod->width);
 			if (iod->length)
 				iod->dollar.y %= iod->length;

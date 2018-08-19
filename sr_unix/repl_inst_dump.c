@@ -3,7 +3,7 @@
  * Copyright (c) 2006-2017 Fidelity National Information	*
  * Services, Inc. and/or its subsidiaries. All rights reserved.	*
  *								*
- * Copyright (c) 2017 YottaDB LLC. and/or its subsidiaries.	*
+ * Copyright (c) 2017-2018 YottaDB LLC. and/or its subsidiaries.*
  * All rights reserved.						*
  *								*
  *	This source code contains the intellectual property	*
@@ -783,8 +783,8 @@ void	repl_inst_dump_gtmsourcelocal(gtmsource_local_ptr_t gtmsourcelocal_ptr)
 		}
 
 		PRINT_OFFSET_PREFIX(offsetof(gtmsource_local_struct, gtmsource_state), SIZEOF(gtmsourcelocal_ptr->gtmsource_state));
-		string = ((0 <= gtmsourcelocal_ptr->gtmsource_state)
-				&& (GTMSOURCE_NUM_STATES > gtmsourcelocal_ptr->gtmsource_state))
+		string = ((0 <= (signed)gtmsourcelocal_ptr->gtmsource_state)
+				&& (GTMSOURCE_NUM_STATES > (signed)gtmsourcelocal_ptr->gtmsource_state))
 					? (char *)state_array[gtmsourcelocal_ptr->gtmsource_state] : "UNKNOWN";
 		if (MEMCMP_LIT(string, "UNKNOWN"))
 			util_out_print( PREFIX_SOURCELOCAL "Processing State          !R22AZ", TRUE, idx, string);

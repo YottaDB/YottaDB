@@ -88,7 +88,7 @@ typedef struct
 				       but must be less than or equal to gds_file_id */
 	{	ino_t	inode;
 		dev_t	device;
-#if defined(__hpux) || defined(__linux__) || defined (__CYGWIN__) ||defined(_UWIN) || defined(__MVS__)
+#if defined(__hpux) || defined(__linux__) || defined (__CYGWIN__) ||defined(_UWIN) || defined(__MVS__) || defined(__APPLE__)
 		unsigned int st_gen;
 #elif defined(_AIX)
 		ulong_t st_gen;

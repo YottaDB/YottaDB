@@ -36,7 +36,7 @@ int4	getstorage(void)
                           CALLFROM,
                           save_errno);
         }
-#if !defined(__MVS__)
+#if !defined(__MVS__) && !defined(__APPLE__)
 	cur_sbrk = (UINTPTR_T)sbrk(0); /* Two step conversion to eliminate warnings */
 #else
 	cur_sbrk = 0;			/* smw until something better */

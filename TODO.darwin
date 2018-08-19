@@ -1,0 +1,10 @@
+# Todo list for Mac OS X Port
+
+ * Make custom commands to massage GAS assembler files into something LLVM would use
+ * Assembler macros for sigsetjmp and label jump g_msf.si.
+ * Mach-O object files (done)(ld to create dynamic libraries doesn't work though)
+ * Shared autolink routine libraries don't work b/c of mprotect issue on shared memory.
+ * Some files in sr_darwin are common; we don't need separate copies
+ * sr_unix/extract_signal_info.c - FIXME, I just copied this
+ * sr_unix/mu_cre_file.c (double check -- not a problem) - Mac OS X does not support posix_fallocate()
+ * sr_unix/mutex.c (code just needs to be deleted) - That #ifdef 0 should have probably just deleted the code since the variable wake_this_pid is not even defined

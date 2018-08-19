@@ -3,6 +3,9 @@
  * Copyright (c) 2001-2016 Fidelity National Information	*
  * Services, Inc. and/or its subsidiaries. All rights reserved.	*
  *								*
+ * Copyright (c) 2018 YottaDB LLC. and/or its subsidiaries.	*
+ * All rights reserved.						*
+ *								*
  *	This source code contains the intellectual property	*
  *	of its copyright holder(s), and is made available	*
  *	under a license.  If you do not know the terms of	*
@@ -168,13 +171,13 @@ unsigned char *mval2subsc(mval *in_val, gv_key *out_key, boolean_t std_null_coll
 		}
 		if (10 > mt)
 		{
-			*out_ptr++ = is_negative ? ~(SUBSCRIPT_BIAS - 2) : (SUBSCRIPT_BIAS - 2);
+			*out_ptr++ = (unsigned char)(is_negative ? ~(SUBSCRIPT_BIAS - 2) : (SUBSCRIPT_BIAS - 2));
 			*out_ptr++ = cvt_table[mt * 10];
 			goto FINISH_NUMBER;
 		}
 		if (100 > mt)
 		{
-			*out_ptr++ = is_negative ? ~(SUBSCRIPT_BIAS - 1) : (SUBSCRIPT_BIAS - 1);
+			*out_ptr++ = (unsigned char)(is_negative ? ~(SUBSCRIPT_BIAS - 1) : (SUBSCRIPT_BIAS - 1));
 			*out_ptr++ = cvt_table[mt];
 			goto FINISH_NUMBER;
 		}

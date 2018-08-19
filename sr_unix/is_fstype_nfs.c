@@ -11,7 +11,9 @@
  ****************************************************************/
 #include "mdef.h"
 
+#ifndef __APPLE__
 #include <sys/statfs.h>
+#endif
 #ifdef _AIX
 #include <sys/vmount.h>	/* needed for MNT_NFS */
 #endif
@@ -29,6 +31,9 @@
 
 boolean_t is_fstype_nfs(int fd)
 {
+#	ifdef __APPLE__
+	return FALSE;
+#	else
 	struct statfs	buf;
 	boolean_t	is_nfs;
 
@@ -43,4 +48,5 @@ boolean_t is_fstype_nfs(int fd)
 #	error UNSUPPORTED PLATFORM
 #	endif
 	return is_nfs;
+#	endif
 }

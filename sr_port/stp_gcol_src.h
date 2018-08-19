@@ -719,7 +719,7 @@ void stp_gcol(size_t space_asked)	/* BYPASSOK */
 		MVAL_STPG_ADD(&dollar_ztwormhole);
 #		endif
 		MVAL_STPG_ADD(TADR(last_fnquery_return_varname));
-		for (index = 0; index < TREF(last_fnquery_return_subcnt); index++);
+		for (index = 0; index < TREF(last_fnquery_return_subcnt); index++)
 			MVAL_STPG_ADD(&TAREF1(last_fnquery_return_sub, index));
 		for (mvs = mv_chain; mvs < (mv_stent *)stackbase; mvs = (mv_stent *)((char *)mvs + mvs->mv_st_next))
 		{

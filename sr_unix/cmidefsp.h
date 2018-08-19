@@ -88,7 +88,7 @@ typedef struct clb_stat_struct
  */
 
 #include "gtm_inet.h"
-#ifdef __MVS__
+#if defined(__MVS__) || defined(__APPLE__)
 /* need fd_set */
 #include <sys/time.h>
 #endif

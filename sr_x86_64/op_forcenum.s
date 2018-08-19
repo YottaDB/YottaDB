@@ -23,8 +23,8 @@
 #
 # Routine to force the input source mval to a number if it is not already so.
 #
-#	REG64_RET1 [r10] - source mval
-#	REG64_RET0 [rax] - destination mval
+#	%r10 [r10] - source mval
+#	%rax [rax] - destination mval
 #
 
 save_ret0	= 0
@@ -32,50 +32,52 @@ save_ret1	= 8
 FRAME_SIZE	= 24					# This frame size gives us a 16 byte aligned stack
 
 ENTRY	op_forcenum
-	subq	$FRAME_SIZE, REG_SP			# Allocate save area and align stack
+	subq	$FRAME_SIZE, %rsp			# Allocate save area and align stack
 	CHKSTKALIGN					# Verify stack alignment
-	movq	REG64_RET0, save_ret0(REG_SP)
-	mv_force_defined REG64_RET1, l00
-	movq	REG64_RET1, save_ret1(REG_SP)
-	mv_force_num REG64_RET1, l10
-	movq 	save_ret1(REG_SP), REG64_RET1
-	movq	save_ret0(REG_SP), REG64_RET0
-	testw	$mval_m_str, mval_w_mvtype(REG64_RET1)
+	movq	%rax, save_ret0(%rsp)
+	mv_force_defined %r10, l00
+	movq	%r10, save_ret1(%rsp)
+	mv_force_num %r10, l10
+	movq 	save_ret1(%rsp), %r10
+	movq	save_ret0(%rsp), %rax
+	testw	$mval_m_str, mval_w_mvtype(%r10)
 	jz	l20
-	testw	$mval_m_num_approx, mval_w_mvtype(REG64_RET1)
+	testw	$mval_m_num_approx, mval_w_mvtype(%r10)
 	jz	l40
 l20:
-	testw	$mval_m_int_without_nm, mval_w_mvtype(REG64_RET1)
+	testw	$mval_m_int_without_nm, mval_w_mvtype(%r10)
 	jz	l30
-	movw	$mval_m_int, mval_w_mvtype(REG64_RET0)
-	movl	mval_l_m1(REG64_RET1), REG32_ARG2
-	movl	REG32_ARG2, mval_l_m1(REG64_RET0)
+	movw	$mval_m_int, mval_w_mvtype(%rax)
+	movl	mval_l_m1(%r10), %edx
+	movl	%edx, mval_l_m1(%rax)
 	jmp	done
 
 l30:
-	movw	$mval_m_nm, mval_w_mvtype(REG64_RET0)
-	movb	mval_b_exp(REG64_RET1), REG8_ARG2
-	movb	REG8_ARG2, mval_b_exp(REG64_RET0)
+	movw	$mval_m_nm, mval_w_mvtype(%rax)
+	movb	mval_b_exp(%r10), %dl
+	movb	%dl, mval_b_exp(%rax)
 	#
 	# Copy the only numeric part of Mval from [r10] to [rax].
 	#
-	movl	mval_l_m0(REG64_RET1), REG32_ARG2
-	movl	REG32_ARG2, mval_l_m0(REG64_RET0)
-	movl	mval_l_m1(REG64_RET1), REG32_ARG2
-	movl	REG32_ARG2, mval_l_m1(REG64_RET0)
+	movl	mval_l_m0(%r10), %edx
+	movl	%edx, mval_l_m0(%rax)
+	movl	mval_l_m1(%r10), %edx
+	movl	%edx, mval_l_m1(%rax)
 	jmp	done
 l40:
 	#
-	# Copy the Mval from REG64_RET1 [r10] to REG64_RET0 [rax].
+	# Copy the Mval from %r10 [r10] to %rax [rax].
 	#
-	movq	REG64_RET0, REG64_ARG0
-	movq	REG64_RET1, REG64_ARG1
-	movl	$mval_qword_len, REG32_ARG3
+	movq	%rax, %rdi
+	movq	%r10, %rsi
+	movl	$mval_qword_len, %ecx
 	REP
 	movsq
 done:
-	addq	$FRAME_SIZE, REG_SP			# Remove save area from C stack
+	addq	$FRAME_SIZE, %rsp			# Remove save area from C stack
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

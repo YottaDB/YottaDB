@@ -261,11 +261,15 @@ struct	rel_table
  * and should be used if you aren't interested the a.out header
  * or relocation information.
  */
+#ifdef __APPLE__
+#include <mach-o/nlist.h>
+#else
 struct	nlist
 {
 	int4		n_type;		/* Type flag, i.e. N_TEXT etc; see below */
 	uint4		n_value;	/* Value of this symbol (or sdb offset) */
 };
+#endif
 
 struct	sym_table
 {

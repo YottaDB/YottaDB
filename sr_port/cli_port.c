@@ -3,6 +3,9 @@
  * Copyright (c) 2001-2017 Fidelity National Information	*
  * Services, Inc. and/or its subsidiaries. All rights reserved.	*
  *								*
+ * Copyright (c) 2018 YottaDB LLC. and/or its subsidiaries.	*
+ * All rights reserved.						*
+ *								*
  *	This source code contains the intellectual property	*
  *	of its copyright holder(s), and is made available	*
  *	under a license.  If you do not know the terms of	*
@@ -316,7 +319,7 @@ int cli_parse_two_numbers(char *qual_name, const char delimiter, uint4 *first_nu
 				break;
 			prev_value = num;
 		}
-		if((0 > num || num > INT_MAX) || *num_ch != '\0')
+		if ((num > INT_MAX) || ('\0' != *num_ch))
 		{
 			util_out_print("Error parsing or invalid parameter for !AZ", TRUE, qual_name);
 			return 0;
@@ -335,7 +338,7 @@ int cli_parse_two_numbers(char *qual_name, const char delimiter, uint4 *first_nu
 				break;
 			prev_value = num;
 		}
-		if((0 > num || num > INT_MAX) || *num_ch != '\0')
+		if ((num > INT_MAX) || ('\0' != *num_ch))
 		{
 			util_out_print("Error parsing or invalid parameter for LOG_INTERVAL", TRUE);
 			return 0;

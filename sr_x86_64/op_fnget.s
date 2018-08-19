@@ -24,8 +24,8 @@
 # Mumps $Get function
 #
 #
-#	r10->REG64_RET1 - src. mval
-#	rax->REG64_RET0 - dest. mval
+#	r10->%r10 - src. mval
+#	rax->%rax - dest. mval
 #
 # Note there is no stack padding for alignment and no check in this routine because it is a leaf routine
 # so never calls anything else. The stack is unaligned by 8 bytes due to the return register but that is
@@ -36,24 +36,26 @@
 	.text
 
 ENTRY	op_fnget
-	cmpq	$0, REG64_RET1
+	cmpq	$0, %r10
 	je	l5				# Source mval does not exist
-	mv_if_notdefined REG64_RET1, l5		# Branch if source mval is not defined
-	movl	$mval_qword_len, REG32_ARG3	# Size of mval
-	movq	REG64_RET1, REG64_ARG1		# Set source
-	movq	REG64_RET0, REG64_ARG0		# Set destination
+	mv_if_notdefined %r10, l5		# Branch if source mval is not defined
+	movl	$mval_qword_len, %ecx		# Size of mval
+	movq	%r10, %rsi			# Set source
+	movq	%rax, %rdi			# Set destination
 	REP					# Repeat until count is zero
 	movsq
-	andw	$~mval_m_aliascont, mval_w_mvtype(REG64_RET0)	# Don't propagate alias container flag
+	andw	$~mval_m_aliascont, mval_w_mvtype(%rax)	# Don't propagate alias container flag
 	ret
 
 	#
 	# Source mval either non-existent or undefined. Set return mval to null string and return it
 	#
 l5:
-	movw	$mval_m_str, mval_w_mvtype(REG64_RET0)
-	movl	$0, mval_l_strlen(REG64_RET0)
+	movw	$mval_m_str, mval_w_mvtype(%rax)
+	movl	$0, mval_l_strlen(%rax)
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

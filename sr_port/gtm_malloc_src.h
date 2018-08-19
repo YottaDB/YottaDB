@@ -51,7 +51,7 @@
 #include <unistd.h>
 #include <stddef.h>
 #include <errno.h>
-#if !defined(__MVS__)
+#if !defined(__MVS__) && !defined(__APPLE__)
 #  include <malloc.h>
 #endif
 #include "gtm_stdio.h"

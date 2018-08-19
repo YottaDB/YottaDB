@@ -30,22 +30,24 @@
 	# needs to use CHKSTKALIGN macro and make sure stack is 16 byte aligned.
 	#
 ENTRY	op_gettruth
-	cmpl	$0, dollar_truth(REG_IP)
+	cmpl	$0, dollar_truth(%rip)
 	jne	l1
-	leaq	literal_zero(REG_IP), REG64_ARG1
+	leaq	literal_zero(%rip), %rsi
 	jmp	doit
 
 l1:
-	leaq	literal_one(REG_IP), REG64_ARG1
+	leaq	literal_one(%rip), %rsi
 doit:
 	#
-	# Copy/return literal_zero or literal_one mval to caller
+	# Copy/return literal_zero or _literal_one mval to caller
 	#
-	movq	REG64_RET1, REG64_ARG0
-	movl	$mval_qword_len, REG32_ARG3
+	movq	%r10, %rdi
+	movl	$mval_qword_len, %ecx
 	REP
 	movsq
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

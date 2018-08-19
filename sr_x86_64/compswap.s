@@ -20,8 +20,8 @@
 	# comparison value	Arg1
 	# replacement value	Arg2
 	#
-	# cmpxchg will compare REG32_RET0 i.e EAX with 1st arg so copy
-	# comparison value to EAX (REG32_RET0).
+	# cmpxchg will compare %eax i.e EAX with 1st arg so copy
+	# comparison value to EAX (%eax).
 	#
 	# Note since this routine makes no calls, stack alignment is not critical. If ever a call is added then this
 	# routine should take care to align the stack to 16 bytes and add a CHKSTKALIGN macro.
@@ -29,16 +29,18 @@
 
 	.text
 ENTRY	compswap
-	movl	REG32_ARG1, REG32_RET0
+	movl	%esi, %eax
 	lock
-	cmpxchgl  REG32_ARG2, 0(REG64_ARG0)	# compare-and-swap
+	cmpxchgl  %edx, 0(%rdi)	# compare-and-swap
 	jnz	fail
-	movl	$1, REG32_RET0			# Return TRUE
+	movl	$1, %eax			# Return TRUE
 	ret
 fail:
-	xor	REG32_RET0, REG32_RET0		# Return FALSE
+	xor	%eax, %eax		# Return FALSE
 	pause
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

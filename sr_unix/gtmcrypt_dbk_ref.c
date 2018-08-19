@@ -55,12 +55,14 @@
  * AIX boxes the stat structure simply has additional fields with the nanoseconds value, yet the names of those field are different
  * on those two architectures, so we choose our mapping accordingly.
  */
-#if defined st_mtime
+#if defined st_mtime && !defined(__APPLE__)
 #  define st_nmtime				st_mtim.tv_nsec
 #elif defined(_AIX)
 #  define st_nmtime				st_mtime_n
 #elif defined(__hpux) && defined(__ia64)
 #  define st_nmtime				st_nmtime
+#elif defined(__APPLE__)
+#  define st_nmtime				st_mtimespec.tv_nsec
 #endif
 
 /* Insert a new gtm_keystore_xxx_link_t element in a respective tree. */
@@ -635,10 +637,12 @@ STATICFNDEF int keystore_refresh(void)
 			{
 				if (is_ydb_env_match)
 				{
-					UPDATE_ERROR_STRING(ENV_TOOLONG_ERROR, ydbenvname[YDBENVINDX_CRYPT_CONFIG] + 1, status);
+					UPDATE_ERROR_STRING(ENV_TOOLONG_ERROR, ydbenvname[YDBENVINDX_CRYPT_CONFIG] + 1,
+														YDB_PATH_MAX);
 				} else
 				{
-					UPDATE_ERROR_STRING(ENV_TOOLONG_ERROR, gtmenvname[YDBENVINDX_CRYPT_CONFIG] + 1, status);
+					UPDATE_ERROR_STRING(ENV_TOOLONG_ERROR, gtmenvname[YDBENVINDX_CRYPT_CONFIG] + 1,
+														YDB_PATH_MAX);
 				}
 				return -1;
 			}

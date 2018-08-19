@@ -27,7 +27,7 @@
 #include "gtm_un.h"
 
 #include <errno.h>
-#if defined(__MVS__) || defined(__linux__) || defined(__CYGWIN__)
+#if defined(__MVS__) || defined(__linux__) || defined(__CYGWIN__) || defined(__APPLE__)
 #include "gtm_limits.h"
 #else
 #include <sys/limits.h>
@@ -69,6 +69,17 @@
 #ifdef MUTEX_MSEM_WAKE
 #define MUTEX_MAX_WAIT        		(MUTEX_CONST_TIMEOUT_VAL * MILLISECS_IN_SEC)
 #endif
+
+#define	PROBE_SET_TRACEABLE_VAR(CSA, VALUE)					\
+{										\
+	sgmnt_data_ptr_t	lcl_csd;					\
+										\
+	lcl_csd = CSA->hdr;							\
+	assert((NULL != lcl_csd)						\
+		|| (CSA == &FILE_INFO(jnlpool.jnlpool_dummy_reg)->s_addrs));	\
+	if (NULL != lcl_csd)							\
+		SET_TRACEABLE_VAR(CSA->nl->wc_blocked, TRUE);			\
+}
 
 #define	PROBE_BG_TRACE_PRO_ANY(CSA, EVENT)					\
 {										\
@@ -873,7 +884,7 @@ enum cdb_sc gtm_mutex_lock(gd_region *reg,
 						sleep_spin_cnt = MAX(E_4 - mutex_spin_parms->mutex_hard_spin_count, sleep_spin_cnt);
 						yields += sleep_spin_cnt;	/* start with max */
 					}
-#					ifndef MUTEX_MSEM_WAKE
+#					if 0
 					if (wake_this_pid != process_id)
 						mutex_wake_proc((sm_int_ptr_t)&wake_this_pid, wake_instance);
 #					endif

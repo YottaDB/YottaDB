@@ -33,7 +33,7 @@
 #include "gtm_stat.h"
 #include "gtm_socket.h"
 #include <sys/param.h>
-#if !defined(_AIX) && !defined(__linux__) && !defined(__hpux) && !defined(__CYGWIN__) && !defined(__MVS__)
+#if !defined(_AIX) && !defined(__linux__) && !defined(__hpux) && !defined(__CYGWIN__) && !defined(__MVS__) && !defined(__APPLE__)
 # include <siginfo.h>
 #endif
 #include "gtm_syslog.h"
@@ -93,6 +93,10 @@
 #include "getjobnum.h"
 #include "ydb_chk_dist.h"
 #include "ydb_getenv.h"
+
+#ifdef __APPLE__
+# include <mach-o/dyld.h>
+#endif
 
 #define intent_open		"for open"	/* FLUSH_DB_IPCS_INFO types */
 #define intent_close		"for close"
@@ -336,7 +340,19 @@ void gtmsecshr_init(char_ptr_t argv[], char **rundir, int *rundir_len)
 	 */
 
 	/* Step 1 */
+	#if defined(__APPLE__)
+	uint32_t size = YDB_PATH_MAX;
+	char gtmsecshr_path[YDB_PATH_MAX];
+	if (_NSGetExecutablePath(gtmsecshr_path, &size) < 0)
+	{
+		send_msg_csa(CSA_ARG(NULL) VARLSTCNT(6) ERR_GTMSECSHRSTART, 3,
+			RTS_ERROR_LITERAL("Server 1"), process_id, ERR_GTMSECSHRNOARG0);
+		gtmsecshr_exit(UNABLETODETERMINEPATH, FALSE);
+	}
+	rndir = realpath(gtmsecshr_path, gtmsecshr_realpath);
+	#elif defined(__linux__)
 	rndir = realpath(PROCSELF, gtmsecshr_realpath);
+	#endif
 	if (NULL != rndir)
 		rndirln = STRLEN(rndir);
 	else

@@ -2197,7 +2197,7 @@ typedef struct
 #define SPANGLOB_SUB_ESCAPE  0X02
 #define	STR_SUB_MAXVAL	0xFF
 #define SUBSCRIPT_ZERO  0x080
-#define SUBSCRIPT_BIAS  0x0BE
+#define SUBSCRIPT_BIAS  ((unsigned char)0x0BE)
 #define NEG_MNTSSA_END  0x0FF
 #define KEY_DELIMITER   0X00
 #ifdef BIGENDIAN

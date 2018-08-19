@@ -1,0 +1,22 @@
+Install homebrew: http://brew.sh
+
+Homebrew:
+```
+brew install cmake icu4c libconfig libgcrypt gpgme openssl
+brew link icu4c --force
+```
+Need to install [objconv](http://www.agner.org/optimize/#objconv). This requires a manual compile and copy to somewhere in your path
+
+Note to future self: need info on how to link openssl in cmake: /usr/local/opt/openssl/liblibssl.dylib
+
+Note: if you get a linking error from homebrew change the permissions on /usr/local/include and /usr/local/lib to allow your user to write to the directory:
+```
+sudo chmod ugo+rw /usr/local/include
+sudo chmod ugo+rw /usr/local/lib
+```
+
+Now go ahead and make:
+```
+   mkdir build && cd build && cmake -D CMAKE_INSTALL_PREFIX:PATH=$PWD ../
+   make -j16
+```

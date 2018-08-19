@@ -398,6 +398,7 @@ unsigned char mu_cre_file(void)
 		REVERT;
 		return EXIT_ERR;
 	}
+#	if !defined(__APPLE__)
 	if (!cs_data->defer_allocate)
 	{
 		status = posix_fallocate(udi->fd, 0, BLK_ZERO_OFF(cs_data->start_vbn) +
@@ -411,6 +412,7 @@ unsigned char mu_cre_file(void)
 			return EXIT_ERR;
 		}
 	}
+#	endif
 	/* If we are opening a statsDB, use IPC type permissions derived from the baseDB */
 	if (IS_STATSDB_REG(gv_cur_region))
 	{

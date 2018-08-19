@@ -29,39 +29,41 @@ FRAME_SIZE	= 24					# This size 16 byte aligns the stack
 #
 # op_neg ( mval *u, mval *v ) : u = -v
 #
-#	REG64_RET1 - source mval      = &v
-#	REG64_RET0 - destination mval = &u
+#	%r10 - source mval      = &v
+#	%rax - destination mval = &u
 #
 ENTRY	op_neg
-	subq	$FRAME_SIZE, REG_SP			# Create save area and 16 byte align stack
+	subq	$FRAME_SIZE, %rsp			# Create save area and 16 byte align stack
 	CHKSTKALIGN					# Verify stack alignment
-	movq	REG64_RET0, save_ret0(REG_SP)		# Save dest mval addr across potential call
-	mv_force_defined REG64_RET1, isdefined
-	mv_if_number REG64_RET1, numer			# Branch if numeric
-	movq	REG64_RET1, save_ret1(REG_SP)		# Save src mval (may not be original if noundef set)
-	movq	REG64_RET1, REG64_ARG0			# Move src mval to parm reg for s2n()
+	movq	%rax, save_ret0(%rsp)		# Save dest mval addr across potential call
+	mv_force_defined %r10, isdefined
+	mv_if_number %r10, numer			# Branch if numeric
+	movq	%r10, save_ret1(%rsp)		# Save src mval (may not be original if noundef set)
+	movq	%r10, %rdi			# Move src mval to parm reg for s2n()
 	call	s2n
-	movq	save_ret1(REG_SP), REG64_RET1		# Restore source mval addr
+	movq	save_ret1(%rsp), %r10		# Restore source mval addr
 numer:
-	movq	save_ret0(REG_SP), REG64_RET0		# Restore destination mval addr
-	mv_if_notint REG64_RET1, float			# Branch if not an integer
-	movw	$mval_m_int, mval_w_mvtype(REG64_RET0)
-	movl	mval_l_m1(REG64_RET1), REG32_RET1
-	negl	REG32_RET1
-	movl	REG32_RET1, mval_l_m1(REG64_RET0)
+	movq	save_ret0(%rsp), %rax		# Restore destination mval addr
+	mv_if_notint %r10, float			# Branch if not an integer
+	movw	$mval_m_int, mval_w_mvtype(%rax)
+	movl	mval_l_m1(%r10), %r10d
+	negl	%r10d
+	movl	%r10d, mval_l_m1(%rax)
 	jmp	done
 float:
-	movw	$mval_m_nm, mval_w_mvtype(REG64_RET0)
-	movb	mval_b_exp(REG64_RET1), REG8_SCRATCH1
-	xorb	$mval_esign_mask, REG8_SCRATCH1		# Flip the sign bit
-	movb	REG8_SCRATCH1, mval_b_exp(REG64_RET0)
-	movl	mval_l_m0(REG64_RET1), REG32_SCRATCH1
-	movl	REG32_SCRATCH1, mval_l_m0(REG64_RET0)
-	movl	mval_l_m1(REG64_RET1), REG32_SCRATCH1
-	movl	REG32_SCRATCH1, mval_l_m1(REG64_RET0)
+	movw	$mval_m_nm, mval_w_mvtype(%rax)
+	movb	mval_b_exp(%r10), %r11b
+	xorb	$mval_esign_mask, %r11b		# Flip the sign bit
+	movb	%r11b, mval_b_exp(%rax)
+	movl	mval_l_m0(%r10), %r11d
+	movl	%r11d, mval_l_m0(%rax)
+	movl	mval_l_m1(%r10), %r11d
+	movl	%r11d, mval_l_m1(%rax)
 done:
-	addq	$FRAME_SIZE, REG_SP			# Remove save area from C stack
+	addq	$FRAME_SIZE, %rsp			# Remove save area from C stack
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

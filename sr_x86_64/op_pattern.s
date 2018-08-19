@@ -23,11 +23,11 @@
 	.extern	do_pattern
 
 ENTRY	op_pattern
-	subq	$8, REG_SP				# Bump stack for 16 byte alignment
+	subq	$8, %rsp				# Bump stack for 16 byte alignment
 	CHKSTKALIGN					# Verify stack alignment
-	movq	REG64_RET1, REG64_ARG1
-	movq	REG64_RET0, REG64_ARG0
-	movq	mval_a_straddr(REG64_RET1), REG64_ACCUM
+	movq	%r10, %rsi
+	movq	%rax, %rdi
+	movq	mval_a_straddr(%r10), %rax
 	#
 	# This is an array of unaligned ints. If the first word is zero, then call do_pattern
 	# instead of do_patfixed. Only the low order byte is significant and so it is the only
@@ -35,16 +35,18 @@ ENTRY	op_pattern
 	# routine anyway to set up the condition code the generated code needs and (2) it
 	# saves an extra level of call linkage at the C level to do the decision here.
 	#
-	cmpb	$0, 0(REG64_ACCUM)			# Little endian compare of low order byte
+	cmpb	$0, 0(%rax)			# Little endian compare of low order byte
 	je	l1
 	call	do_patfixed
 	jmp	l2
 l1:
 	call	do_pattern
 l2:
-	addq	$8, REG_SP				# Remove stack alignment bump
-	cmpl	$0, REG32_ACCUM				# Set condition code for generated code
+	addq	$8, %rsp				# Remove stack alignment bump
+	cmpl	$0, %eax				# Set condition code for generated code
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

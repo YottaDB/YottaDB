@@ -1,12 +1,15 @@
 /****************************************************************
- *                                                              *
- *      Copyright 2011, 2014 Fidelity Information Services, Inc       *
- *                                                              *
- *      This source code contains the intellectual property     *
- *      of its copyright holder(s), and is made available       *
- *      under a license.  If you do not know the terms of       *
- *      the license, please stop and do not read further.       *
- *                                                              *
+ *								*
+ * Copyright 2011, 2014 Fidelity Information Services, Inc	*
+ *								*
+ * Copyright (c) 2018 YottaDB LLC. and/or its subsidiaries.	*
+ * All rights reserved.						*
+ *								*
+ *	This source code contains the intellectual property	*
+ *	of its copyright holder(s), and is made available	*
+ *	under a license.  If you do not know the terms of	*
+ *	the license, please stop and do not read further.	*
+ *								*
  ****************************************************************/
 
 /*-----------------------------------------------------------------------------
@@ -671,7 +674,6 @@ MBSTART {													\
 	ADD_BYTES((STATEPTR), (KEY) + pb_carry_fill, (LEN) - pb_carry_fill);					\
 } MBEND
 
-#define UNALIGNED_SAFE	(defined(__i386) || defined(__x86_64__) || defined(_AIX))
 
 /* This is an endian-independent 16-byte murmur hash function */
 void gtmmrhash_128(const void *key, int len, uint4 seed, gtm_uint16 *out)
@@ -710,7 +712,7 @@ void gtmmrhash_128_ingest(hash128_state_t *state, const void *key, int len)
 		return;
 
 	keyptr = key;
-#	if !UNALIGNED_SAFE
+#	if !(defined(__i386) || defined(__x86_64__) || defined(_AIX))
 	/* determine the number of bytes to consume to reach 64-bit (8 byte) alignment */
 	i = (0x8 - ((UINTPTR_T)keyptr & 0x7)) & 0x7;
 	if (i > len)

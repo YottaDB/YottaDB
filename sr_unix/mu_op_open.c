@@ -348,21 +348,15 @@ static boolean_t mu_open_try(io_log_name *naml, io_log_name *tl, mval *pp, mval 
 		if (-1 == file_des)
 			return FALSE;
 	}
-#ifdef KEEP_zOS_EBCDIC
+#	ifdef KEEP_zOS_EBCDIC
 	SET_CODE_SET(iod->in_code_set, OUTSIDE_CH_SET);
 	if (DEFAULT_CODE_SET != iod->in_code_set)
 		ICONV_OPEN_CD(iod->input_conv_cd, OUTSIDE_CH_SET, INSIDE_CH_SET);
 	SET_CODE_SET(iod->out_code_set, OUTSIDE_CH_SET);
 	if (DEFAULT_CODE_SET != iod->out_code_set)
 		ICONV_OPEN_CD(iod->output_conv_cd, INSIDE_CH_SET, OUTSIDE_CH_SET);
-#endif
-	/* smw 99/12/18 not possible to be -1 here */
-	if (-1 == file_des)
-	{
-		rts_error_csa(CSA_ARG(NULL) VARLSTCNT(8) ERR_SYSCALL, 5,
-			  RTS_ERROR_LITERAL("open()"),
-			  CALLFROM, save_errno);
-	}
+#	endif
+	assert(-1 != file_des); /* as otherwise we would have returned after the OPEN3 above */
 	if (n_io_dev_types == iod->type)
 	{
 		if (isatty(file_des))
@@ -371,7 +365,7 @@ static boolean_t mu_open_try(io_log_name *naml, io_log_name *tl, mval *pp, mval 
 		{	/* assume mag tape */
 			iod->type = mt;
 			assert(FALSE);
-		}else
+		} else
 			iod->type = rm;
 	}
 	assert(iod->type < n_io_dev_types);

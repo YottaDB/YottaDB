@@ -28,19 +28,21 @@
 
 ENTRY	op_startintrrpt
 	putframe
-	subq	$8, REG_SP			# Allocate save area and align stack to 16 bytes
+	subq	$8, %rsp			# Allocate save area and align stack to 16 bytes
 	CHKSTKALIGN				# Verify stack alignment
-	cmpb	$0, neterr_pending(REG_IP)
+	cmpb	$0, neterr_pending(%rip)
 	je	l1
 	call	outofband_clear
-	movq	$0, REG64_ARG0
+	movq	$0, %rdi
 	call	gvcmz_neterr
 l1:
-	movl	$1, REG32_ARG0
-	call	async_action			# Normally does not return but just in case..
-	addq	$16, REG_SP			# Remove alignment stack bump & burn return addr
+	movl	$1, %edi
+	call	async_action
+	addq	$16, %rsp			# Remove alignment stack bump & burn return addr
 	getframe				# Load regs for possible new frame and push return addr
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

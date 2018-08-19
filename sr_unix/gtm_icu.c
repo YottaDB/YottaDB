@@ -274,6 +274,18 @@ void gtm_icu_init(void)
 		len = STR_LIT_LEN(ICU_LIBNAME_EXT);
 		memcpy(&icu_libname[icu_libname_len], ICU_LIBNAME_EXT, len);
 		icu_libname_len += len;
+#		elif defined(__APPLE__)
+		/* Transform (e.g. libicuio.a  -> libicuio.55.1.dylib) */
+		len = STR_LIT_LEN(ICU_LIBNAME_ROOT);
+		memcpy(&icu_libname[icu_libname_len], ICU_LIBNAME_ROOT, len);
+		icu_libname_len += len;
+		icu_libname[icu_libname_len++] = '.';
+		memcpy(&icu_libname[icu_libname_len], iculibver, iculibver_len);
+		icu_libname_len += iculibver_len;
+		icu_libname[icu_libname_len++] = '.';
+		len = STR_LIT_LEN(ICU_LIBNAME_EXT);
+		memcpy(&icu_libname[icu_libname_len], ICU_LIBNAME_EXT, len);
+		icu_libname_len += len;
 #		else
 		/* Transform (e.g. libicuio.so -> libicuio.so.36) */
 		len = STR_LIT_LEN(ICU_LIBNAME);
@@ -287,7 +299,11 @@ void gtm_icu_init(void)
 		assert(SIZEOF(icu_libname) > icu_libname_len);
 		libname = icu_libname;
 	} else
+#if defined(__APPLE__)
+		libname = APPLE_ICU_LIB_NAME; /* Use Apple's undocumented private ICU implementation with unrenamed symbols */
+#else
 		libname = ICU_LIBNAME;	/* go with default name */
+#endif
 #	ifdef _AIX
 	if (gtm_icu_ver_defined || /* Use the AIX system default when no ICU version specified */
 			NULL == (handle = dlopen(ICU_LIBNAME_DEF, ICU_LIBFLAGS | RTLD_MEMBER)))

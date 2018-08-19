@@ -55,7 +55,11 @@ if [ -d utf8 ]; then
 fi
 
 # Native shared library extension.
-ext=".so"
+if [ $arch = "darwin" ]; then
+	ext=".dylib"
+else
+	ext=".so"
+fi
 
 isarm_ydb=`file mumps | grep -w "ARM" | wc -l`
 is64bit_ydb=`file mumps | grep -c "64-bit"`
@@ -69,6 +73,7 @@ elif [ "linux" = $arch ] ; then
 	else
 		ldcmd="ld" # Linux - all platforms
 	fi
+elif [ "darwin" = $arch ] ; then ldflags="-dylib" ; ldcmd="ld" # Mac OS X
 else echo "Shared libary ldflags not set for this platform"; exit 1
 fi
 
@@ -176,8 +181,13 @@ if [ "" != "$issystemd" ] ; then
 fi
 # Native super user and group
 rootuser=root
-bingroup=root
-defowner=root
+if [ $arch = "darwin" ] ; then
+	bingroup=admin
+	defowner=root
+else
+	bingroup=bin
+	defowner=bin
+fi
 
 # create temporary file to test for valid user and group names
 touch tmp_owngrp
@@ -279,124 +289,142 @@ $echo ""
 
 # keep the utf8 libicu search code in gtm_test_install.csh in sync with the following!
 if [ -d "utf8" ]; then
-	unset ydb_icu_version
-	# If package has utf8 directory, see if system has libicu and locale
-	# Setup library path (in prep for looking for libicu and crypto libs)
-	# Please keep in sync with sr_unix/set_library_path.csh and sr_unix/gtm_test_install.csh
-	if [ $is64bit_ydb -eq 1 ] ; then
-		library_path="/usr/local/lib64 /usr/local/lib /usr/lib64 /usr/lib /usr/lib/x86_64-linux-gnu"
-	elif [ "$isarm_ydb" -eq 1 ] ; then
-		library_path="/usr/local/lib32 /usr/local/lib /usr/lib32 /usr/lib /usr/lib/arm-linux-gnueabihf /lib32 /lib"
+	if [ $arch = "darwin" ]; then  # Always install ICU as Mac comes with it
+		doutf8=1
+		found_icu=1
 	else
-		library_path="                 /usr/local/lib /usr/lib32 /usr/lib /usr/lib/i386-linux-gnu"
-	fi
-	$echo "Should UTF-8 support be installed? (y or n) \c"
-	read resp
-	if [ ! -t 0 ] ; then echo "$resp"; fi
-	if [ "$resp" = "Y" -o "$resp" = "y" ] ; then
-		would_like_utf8=1
-		$echo "Should an ICU version other than the default be used? (y or n) \c"
+		unset ydb_icu_version
+		# If package has utf8 directory, see if system has libicu and locale
+		# Setup library path (in prep for looking for libicu and crypto libs)
+		# Please keep in sync with sr_unix/set_library_path.csh and sr_unix/gtm_test_install.csh
+		if [ $is64bit_ydb -eq 1 ] ; then
+			library_path="/usr/local/lib64 /usr/local/lib /usr/lib64 /usr/lib /usr/lib/x86_64-linux-gnu"
+		elif [ "$isarm_ydb" -eq 1 ] ; then
+			library_path="/usr/local/lib32 /usr/local/lib /usr/lib32 /usr/lib /usr/lib/arm-linux-gnueabihf /lib32 /lib"
+		else
+			library_path="                 /usr/local/lib /usr/lib32 /usr/lib /usr/lib/i386-linux-gnu"
+		fi
+		$echo "Should UTF-8 support be installed? (y or n) \c"
 		read resp
 		if [ ! -t 0 ] ; then echo "$resp"; fi
 		if [ "$resp" = "Y" -o "$resp" = "y" ] ; then
-			$echo "Enter ICU version (at least ICU version 3.6 is required. Enter as <major-ver>.<minor-ver>): \c"
-			read ydb_icu_version
-			if [ ! -t 0 ] ; then echo "$ydb_icu_version"; fi
-			maj=`$echo $ydb_icu_version | cut -f 1 -d "."`
-			if [ "$maj" -ge "49" ] ; then
-				# Assuming the input is of the form 52.1. As of ICU 49 (aka 4.9),
-				# the version reported by icu-config --version is <major><minor>.<milli> and not <major>.<minor>
-				majmin=$maj
-			else
-				# Assuming the input is of the form 4.2.1
-				majmin=`$echo $ydb_icu_version | cut -d "." -f 1,2 | sed 's/\.//'`
+			would_like_utf8=1
+			$echo "Should an ICU version other than the default be used? (y or n) \c"
+			read resp
+			if [ ! -t 0 ] ; then echo "$resp"; fi
+			if [ "$resp" = "Y" -o "$resp" = "y" ] ; then
+				$echo "Enter ICU version (at least ICU version 3.6 is required. Enter as <major-ver>.<minor-ver>): \c"
+				read ydb_icu_version
+				if [ ! -t 0 ] ; then echo "$ydb_icu_version"; fi
+				maj=`$echo $ydb_icu_version | cut -f 1 -d "."`
+				if [ "$maj" -ge "49" ] ; then
+					# Assuming the input is of the form 52.1. As of ICU 49 (aka 4.9),
+					# the version reported by icu-config --version is <major><minor>.<milli> and not <major>.<minor>
+					majmin=$maj
+				else
+					# Assuming the input is of the form 4.2.1
+					majmin=`$echo $ydb_icu_version | cut -d "." -f 1,2 | sed 's/\.//'`
+				fi
+				if [ "$majmin" -lt "36" ] ; then
+					$echo "WARNING: ICU version $ydb_icu_version is less than 3.6. \c"
+					$echo "UTF-8 support will not be installed"
+					would_like_utf8=0
+					doutf8=0
+				fi
 			fi
-			if [ "$majmin" -lt "36" ] ; then
-				$echo "WARNING: ICU version $ydb_icu_version is less than 3.6. \c"
-				$echo "UTF-8 support will not be installed"
-				would_like_utf8=0
-				doutf8=0
-			fi
+		else
+			would_like_utf8=0
+			doutf8=0
 		fi
-	else
-		would_like_utf8=0
-		doutf8=0
-	fi
-	# Look for libicu libraries
-	found_icu=0
-	icu_ext=".so"
-	if [ $arch = "ibm" ] ; then
-		icu_ext=".a"
-	fi
-	if [ "$would_like_utf8" -eq 1 ] ; then
-		for libpath in $library_path
-		do
-			icu_lib_found=0
-			if [ "$ydb_icu_version" = "" -a -f "$libpath/libicuio$icu_ext" ] ; then
-				icu_lib_found=1
-				# Find the actual version'ed library to which libicuio.{so,sl,a} points to
-				icu_versioned_lib=`ls -l $libpath/libicuio$icu_ext | awk '{print $NF}'`
-				# Find out vital parameters
-				if [ "$libpath/libicuio$icu_ext" = "$icu_versioned_lib" ]; then
-					majmin=""
-				elif [ $arch = "ibm" ]; then
-					# From the version'ed library(eg. libicuio36.0.a) extract out
-					# 36.0.a
-					full_icu_ver_string=`$echo $icu_versioned_lib | sed 's/libicuio//g'`
-					# Extract 36 from 36.0.a
-					majmin=`$echo $full_icu_ver_string | cut -f 1 -d '.'`
-				else
-					full_icu_ver_string=`$echo $icu_versioned_lib | sed 's/libicuio\.//g'`
-					majmin=`$echo $full_icu_ver_string | cut -f 2 -d '.'`
-				fi
-			elif [ "$ydb_icu_version" != "" ] ; then
-				# If the user specified a desired version number, then check if the ICU
-				# library with that version number exists.
-				# AIX and z/OS reference ICU as libicuioVERSION.{so,a}
-				# The other platforms reference the libraries as libicuio.{sl,so}.VERSION
-				if [ -f "$libpath/libicuio$majmin$icu_ext" -o -f "$libpath/libicuio$icu_ext.$majmin" ] ; then
+		# Look for libicu libraries
+		found_icu=0
+		icu_ext=".so"
+		if [ $arch = "ibm" ] ; then
+			icu_ext=".a"
+		elif [ $arch = "darwin" ] ; then
+			icu_ext=".dylib"
+		fi
+		if [ "$would_like_utf8" -eq 1 ] ; then
+			for libpath in $library_path
+			do
+				icu_lib_found=0
+				if [ "$ydb_icu_version" = "" -a -f "$libpath/libicuio$icu_ext" ] ; then
 					icu_lib_found=1
+					# Find the actual version'ed library to which libicuio.{so,sl,a} points to
+					icu_versioned_lib=`ls -l $libpath/libicuio$icu_ext | awk '{print $NF}'`
+					# Find out vital parameters
+					if [ "$libpath/libicuio$icu_ext" = "$icu_versioned_lib" ]; then
+						majmin=""
+					elif [ $arch = "ibm" ]; then
+						# From the version'ed library(eg. libicuio36.0.a) extract out
+						# 36.0.a
+						full_icu_ver_string=`$echo $icu_versioned_lib | sed 's/libicuio//g'`
+						# Extract 36 from 36.0.a
+						majmin=`$echo $full_icu_ver_string | cut -f 1 -d '.'`
+					elif [ $arch = "darwin" ]; then
+						#libicuio.55.1.dylib -> 55.1
+						full_icu_ver_string=`$echo $icu_versioned_lib | sed 's/libicuio\.//g'`
+						majmin=`$echo $full_icu_ver_string | cut -f 1,2 -d '.'`
+					else
+						full_icu_ver_string=`$echo $icu_versioned_lib | sed 's/libicuio\.//g'`
+						majmin=`$echo $full_icu_ver_string | cut -f 2 -d '.'`
+					fi
+				elif [ "$ydb_icu_version" != "" ] ; then
+					# If the user specified a desired version number, then check if the ICU
+					# library with that version number exists.
+					# AIX and z/OS reference ICU as libicuioVERSION.{so,a}
+					# The other platforms reference the libraries as libicuio.{sl,so}.VERSION
+					if [ -f "$libpath/libicuio$majmin$icu_ext" -o -f "$libpath/libicuio$icu_ext.$majmin" ] ; then
+						icu_lib_found=1
+					else
+						icu_lib_found=0
+					fi
+				fi
+				if [ $icu_lib_found -eq 1 ] ; then
+					# Figure out the object mode(64 bit or 32 bit)  of ICU libraries on the target machine
+					if [ $arch = "linux" ] ; then
+						icu_full_ver_lib=`ls -l $libpath/libicuio$icu_ext.$majmin 2>/dev/null | awk '{print $NF}'`
+						is64bit_icu=`file $libpath/$icu_full_ver_lib 2>/dev/null | grep "64-bit" | wc -l`
+					elif [ $arch = "ibm" ] ; then
+						icu_full_ver_lib=`ls -l $libpath/libicuio$majmin$icu_ext 2>/dev/null | awk '{print $NF}'`
+						icu_full_ver_lib=`basename $icu_full_ver_lib`
+						is64bit_icu=`nm -X64 $libpath/$icu_full_ver_lib 2>/dev/null | head -n 1 | wc -l`
+					elif [ $arch = "darwin" ]; then
+						icu_full_ver_lib=`ls -l $libpath/libicuio.$majmin$icu_ext 2>/dev/null | awk '{print $NF}'`
+						is64bit_icu=`file $icu_full_ver_lib 2>/dev/null | grep "64-bit" | wc -l`
+					fi
+					# Make sure both YottaDB and ICU are in sync with object mode compatibility (eg both are 32 bit/64 bit )
+					if [ "$is64bit_ydb" -eq 1 -a "$is64bit_icu" -ne 0 ] ; then
+						found_icu=1
+					elif [ "$is64bit_ydb" -ne 1 -a "$is64bit_icu" -eq 0 ] ; then
+						found_icu=1
+					else
+						found_icu=0
+					fi
+					# The default ICU library on AIX is unversioned
+					if [ "$found_icu" -eq 1 -a "$majmin" = "" ] ; then majmin=0; fi
+					# If we have everything we want, then save the libpath that contains the proper ICU library and
+					# set the ydb_icu_version
+					if [ $arch = "darwin" ] ; then
+						export ydb_icu_version=$majmin
+						save_icu_libpath="$libpath"
+						break
+					elif [ "$found_icu" -eq 1 -a "$majmin" -ge 36 ] ; then
+						save_icu_libpath="$libpath"
+						minorver=`expr $majmin % 10`
+						majorver=`expr $majmin / 10`
+						ydb_icu_version="$majorver.$minorver"
+						export ydb_icu_version
+						break
+					fi
+				fi
+			done
+			if [ "$found_icu" -eq 0 ] ; then
+				if [ "$majmin" != "" ] ; then
+					$echo "WARNING: ICU version $ydb_icu_version not found. Not installing UTF-8 support."
 				else
-					icu_lib_found=0
+					$echo "WARNING: Default ICU version not found. Not installing UTF-8 support."
 				fi
-			fi
-			if [ $icu_lib_found -eq 1 ] ; then
-				# Figure out the object mode(64 bit or 32 bit)  of ICU libraries on the target machine
-				if [ $arch = "linux" ] ; then
-					icu_full_ver_lib=`ls -l $libpath/libicuio$icu_ext.$majmin 2>/dev/null | awk '{print $NF}'`
-					is64bit_icu=`file $libpath/$icu_full_ver_lib 2>/dev/null | grep "64-bit" | wc -l`
-				elif [ $arch = "ibm" ] ; then
-					icu_full_ver_lib=`ls -l $libpath/libicuio$majmin$icu_ext 2>/dev/null | awk '{print $NF}'`
-					icu_full_ver_lib=`basename $icu_full_ver_lib`
-					is64bit_icu=`nm -X64 $libpath/$icu_full_ver_lib 2>/dev/null | head -n 1 | wc -l`
-				fi
-				# Make sure both YottaDB and ICU are in sync with object mode compatibility (eg both are 32 bit/64 bit )
-				if [ "$is64bit_ydb" -eq 1 -a "$is64bit_icu" -ne 0 ] ; then
-					found_icu=1
-				elif [ "$is64bit_ydb" -ne 1 -a "$is64bit_icu" -eq 0 ] ; then
-					found_icu=1
-				else
-					found_icu=0
-				fi
-				# The default ICU library on AIX is unversioned
-				if [ "$found_icu" -eq 1 -a "$majmin" = "" ] ; then majmin=0; fi
-				# If we have everything we want, then save the libpath that contains the proper ICU library and
-				# set the ydb_icu_version
-				if [ "$found_icu" -eq 1 -a "$majmin" -ge 36 ] ; then
-					save_icu_libpath="$libpath"
-					minorver=`expr $majmin % 10`
-					majorver=`expr $majmin / 10`
-					ydb_icu_version="$majorver.$minorver"
-					export ydb_icu_version
-					break
-				fi
-			fi
-		done
-		if [ "$found_icu" -eq 0 ] ; then
-			if [ "$majmin" != "" ] ; then
-				$echo "WARNING: ICU version $ydb_icu_version not found. Not installing UTF-8 support."
-			else
-				$echo "WARNING: Default ICU version not found. Not installing UTF-8 support."
 			fi
 		fi
 		# Look for locale
@@ -515,7 +543,7 @@ done
 # Install the normal binaries
 for i in $binaries
 do
-	if [ $arch = "linux" ]; then
+	if [ $arch = "linux" -o $arch = "darwin" ]; then
 		install -g $bingroup -o $owner -m 644 $i $ydbdist
 	elif [ $arch = "ibm" ]; then
 		/usr/bin/install -f $ydbdist -M 644 -O $owner -G $bingroup $i
@@ -804,7 +832,7 @@ chmod 700 $tgtmsecshrdir
 chgrp $bingroup $tgtmsecshrdir
 
 # Install gtmsecshr and the wrapper with special permissions
-if [ $arch = "linux" ]; then
+if [ $arch = "linux" -o $arch = "darwin" ]; then
 	install -m 4555 -o root -g $bingroup gtmsecshr $ydbdist
 	install -m 4500 -o root -g $bingroup gtmsecshrdir/gtmsecshr $tgtmsecshrdir/gtmsecshr
 elif [ $arch = "ibm" ]; then

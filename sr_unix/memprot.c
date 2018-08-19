@@ -12,6 +12,10 @@
 #include "mdef.h"
 #include "memprot.h"
 
+#ifndef MAP_ANONYMOUS
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+
 OS_PAGE_SIZE_DECLARE
 
 /*

@@ -1,13 +1,16 @@
 /****************************************************************
- *                                                              *
+ *								*
  * Copyright (c) 2007-2016 Fidelity National Information	*
  * Services, Inc. and/or its subsidiaries. All rights reserved.	*
- *                                                              *
- *      This source code contains the intellectual property     *
- *      of its copyright holder(s), and is made available       *
- *      under a license.  If you do not know the terms of       *
- *      the license, please stop and do not read further.       *
- *                                                              *
+ *								*
+ * Copyright (c) 2018 YottaDB LLC. and/or its subsidiaries.	*
+ * All rights reserved.						*
+ *								*
+ *	This source code contains the intellectual property	*
+ *	of its copyright holder(s), and is made available	*
+ *	under a license.  If you do not know the terms of	*
+ *	the license, please stop and do not read further.	*
+ *								*
  ****************************************************************/
 
 #include "mdef.h"
@@ -26,7 +29,7 @@
 #include "cgp.h"
 #include "compiler.h"
 #include "list_file.h"
-#include <emit_code.h>
+#include "emit_code.h"
 
 #define SET_OBPT_STR(str, len)	(memcpy(obpt, str, len), obpt += len)
 #define SET_OBPT_INT4(value)	obpt = i2asc(obpt, value)
@@ -129,7 +132,7 @@ GBLREF emit_base_info_struct	emit_base_info;
 GBLREF int 			call_4lcldo_variant;
 GBLREF int			jmp_offset;	/* Offset to jump target */
 GBLREF char			cg_phase;	/* Code generation phase */
-GBLREF char 			code_buf[];
+GBLREF CODE_TYPE		code_buf[];
 GBLREF int			code_idx;
 GBLREF unsigned char		*obpt;	 	/* Output buffer index */
 GBLREF unsigned char		outbuf[];

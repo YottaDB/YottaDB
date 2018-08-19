@@ -94,7 +94,7 @@ typedef unsigned short	in_port_t; /* GCC needs this on PARISC */
 typedef uint4 mach_inst;	/* machine instruction */
 #endif /* __hpux */
 
-#if defined(__linux__) || defined(__CYGWIN__)
+#if defined(__linux__) || defined(__APPLE__) || defined(__CYGWIN__)
 #define OFF_T_LONG
 #ifdef NeedInAddrPort
 typedef unsigned short	in_port_t;
@@ -173,7 +173,7 @@ typedef char  mach_inst;	/* machine instruction */
 #ifdef Linux390
 #  define INTERLOCK_ADD(X,Y,Z)	(interlock_add(Z, (sm_int_ptr_t)(X)))
 #else
-#  ifdef __linux__
+#  if defined(__linux__) || defined(__APPLE__)
 #    ifdef __atomic_add_fetch
 #      define INTERLOCK_ADD(X,Y,Z)	(__atomic_add_fetch(X, Z, __ATOMIC_SEQ_CST))
 #    else

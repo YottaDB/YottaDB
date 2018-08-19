@@ -35,9 +35,9 @@
 	#
 	# Stack is not aligned - raise error
 	#
-	movl	$ERR_GTMCHECK, REG32_ARG1
-	movl	$1, REG32_ARG0
-	movb    $0, REG8_ACCUM		# Variable length argument
+	movl	$ERR_GTMCHECK, %esi	#CETODO ORIG: ERR_GTMCHECK(%rip), %esi
+	movl	$1, %edi
+	movb    $0, %al		# Variable length argument
 	call	rts_error
 stkok\@:
 	movq	0(%rsp), %rax		# Restore %rax

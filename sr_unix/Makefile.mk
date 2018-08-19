@@ -120,6 +120,19 @@ ifneq (,$(findstring Linux,$(UNAMESTR)))
 	LIBFLAGS += -L/usr/lib/openssl-1.0
 endif
 
+# Darwin (OSE/SMH)
+ifneq (,$(findstring Darwin,$(UNAMESTR)))
+	# -fPIC for Position Independent Code.
+	CFLAGS += -fPIC -std=c99 -D_DARWIN_C_SOURCE -Wno-parentheses
+	LDFLAGS =
+	# So that dependent libraries are loaded from the parent library's load path at runtime
+	RPATHFLAGS = -Wl,-rpath,'$$ORIGIN'
+	# So that we can build shared library.
+	LDSHR = -shared
+	IFLAGS += -I/usr/local/opt/openssl/include
+	LIBFLAGS += -L/usr/local/opt/openssl/lib
+endif
+
 # AIX
 ifneq (,$(findstring AIX,$(UNAMESTR)))
 	# -qchars=signed forces `char' type to be treated as signed chars.
@@ -152,18 +165,26 @@ endif
 
 # Common header and library paths
 IFLAGS += -I /usr/local/include -I /usr/include -I $(ydb_dist) -I $(CURDIR)
-ifeq ($(BIT64),0)
-	LIBFLAGS += -L /usr/local/lib64
-	LIBFLAGS += -L /usr/local/lib -L /usr/lib64 -L /usr/lib -L /lib64 -L /lib -L `pwd`
+ifneq (,$(findstring Darwin,$(UNAMESTR)))
+	LIBFLAGS += -L `pwd`
 else
-	LIBFLAGS += -L /usr/local/lib32
-	LIBFLAGS += -L /usr/local/lib -L /usr/lib32 -L /usr/lib -L /lib32 -L /lib -L `pwd`
+	ifeq ($(BIT64),0)
+		LIBFLAGS += -L /usr/local/lib64
+		LIBFLAGS += -L /usr/local/lib -L /usr/lib64 -L /usr/lib -L /lib64 -L /lib -L `pwd`
+	else
+		LIBFLAGS += -L /usr/local/lib32
+		LIBFLAGS += -L /usr/local/lib -L /usr/lib32 -L /usr/lib -L /lib32 -L /lib -L `pwd`
+	endif
 endif
 
 CFLAGS += $(IFLAGS)
 LDFLAGS += $(LIBFLAGS) -o
 
 COMMON_LIBS = -lgtmcryptutil -lconfig
+
+ifneq (,$(findstring Darwin,$(UNAMESTR)))
+	COMMON_LIBS += -lcrypto
+endif
 
 # Lists of all files needed for building the encryption plugin.
 crypt_util_srcfiles = gtmcrypt_util.c minimal_gbldefs.c ydb_getenv.c

@@ -30,15 +30,17 @@
 	.extern	trans_code
 
 ENTRY	mum_tstart
-	addq	$8, REG_SP			# Back up over return address (stack should now be 16 byte aligned)
+	addq	$8, %rsp			# Back up over return address (stack should now be 16 byte aligned)
 	CHKSTKALIGN				# Verify stack alignment
-	cmpw	$0, proc_act_type(REG_IP)
+	cmpw	$0, proc_act_type(%rip)
 	je	notrans
 	call	trans_code
 notrans:
 	getframe				# Pushes return addr on stack
-	leaq	xfer_table(REG_IP), REG_XFER_TABLE
+	leaq	xfer_table(%rip), %rbx
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

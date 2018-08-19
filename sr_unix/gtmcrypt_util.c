@@ -101,7 +101,7 @@ GBLDEF gtm_free_fnptr_t			gtm_free_fnptr;
 int gc_load_yottadb_symbols()
 {
 /* CYGWIN TODO: This is to fix a linker error. Undo when it is fixed. */
-#	if !defined(USE_SYSLIB_FUNCS) && !defined(__CYGWIN__)
+#	if !defined(USE_SYSLIB_FUNCS) && !defined(__CYGWIN__) && !defined(__APPLE__)
 	gtm_malloc_fnptr = &gtm_malloc;
 	gtm_free_fnptr = &gtm_free;
 #	endif

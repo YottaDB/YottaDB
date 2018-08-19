@@ -840,8 +840,13 @@ GBLDEF	int4			pending_errtriplecode;	/* if non-zero contains the error code to i
 GBLDEF	uint4	process_id;
 GBLDEF	uid_t	user_id = INVALID_UID, effective_user_id = INVALID_UID;
 GBLDEF	gid_t	group_id = INVALID_GID, effective_group_id = INVALID_GID;
-GBLDEF	struct	passwd getpwuid_struct = {NULL, NULL, INVALID_UID, INVALID_GID, NULL, NULL, NULL};
-						/* cached copy of "getpwuid" to try avoid future system calls for the same "uid" */
+/* Below is a cached copy of "getpwuid" to try avoid future system calls for the same "uid".
+ * Note: We do not initialize all members of the "struct passwd" structure explicitly since the format of this structure
+ * differs across the various supported platforms. All we care about is the "pw_uid" and "pw_gid" fields get set to
+ * INVALID_UID and INVALID_GID and those are the 3rd and 4th fields of the structure on all supported platforms. All fields
+ * after the 4th field will automatically be null-initialized by the compiler for us.
+ */
+GBLDEF	struct	passwd getpwuid_struct = {NULL, NULL, INVALID_UID, INVALID_GID};
 GBLDEF	uint4	image_count;	/* not used in UNIX but defined to preserve VMS compatibility */
 GBLDEF  size_t  totalRmalloc;                           /* Total storage currently (real) malloc'd (includes extent blocks) */
 GBLDEF  size_t  totalAlloc;                             /* Total allocated (includes allocation overhead but not free space */

@@ -156,6 +156,10 @@ typedef struct
 	char		*addr;
 } mstr;
 
-typedef int		boolean_t;
+#ifdef __APPLE__
+	typedef unsigned int	boolean_t;
+#else
+	typedef int		boolean_t;
+#endif
 
 #endif /* GTM_COMMON_DEFS_H */

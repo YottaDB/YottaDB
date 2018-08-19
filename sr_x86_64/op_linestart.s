@@ -29,11 +29,13 @@
 	# it is so.
 	#
 ENTRY	op_linestart
-	movq    frame_pointer(REG_IP), REG64_RET1	# -> M frame
-        movq    (REG_SP), REG64_ACCUM			# Fetch return address to save
-        movq    REG64_ACCUM, msf_mpc_off(REG64_RET1)	# Save incoming return address in frame_pointer->mpc
-	movq    REG_PV, msf_ctxt_off(REG64_RET1)	# Save ctxt in frame_pointer
+	movq    frame_pointer(%rip), %r10	# -> M frame
+        movq    (%rsp), %rax			# Fetch return address to save
+        movq    %rax, msf_mpc_off(%r10)	# Save incoming return address in frame_pointer->mpc
+	movq    %r15, msf_ctxt_off(%r10)	# Save ctxt in frame_pointer
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

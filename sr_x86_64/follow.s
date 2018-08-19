@@ -21,19 +21,21 @@
 	.extern	op_follow
 
 ENTRY	follow
-	subq	$8, REG_SP		# Align to 16 bytes
+	subq	$8, %rsp		# Align to 16 bytes
 	CHKSTKALIGN			# Verify stack alignment
-	movq	REG64_ARG0, REG64_RET0
-	movq	REG64_ARG1, REG64_RET1
+	movq	%rdi, %rax
+	movq	%rsi, %r10
 	call	op_follow
 	jle	notfollow
-	movq	$1, REG64_RET0
+	movq	$1, %rax
 	jmp	done
 notfollow:
-	movq	$0, REG64_RET0
+	movq	$0, %rax
 done:
-	addq	$8, REG_SP		# Remove stack extension
+	addq	$8, %rsp		# Remove stack extension
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

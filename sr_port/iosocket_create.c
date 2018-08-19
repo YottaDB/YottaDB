@@ -332,6 +332,8 @@ socket_struct *iosocket_create(char *sockaddr, uint4 bfsize, int file_des, boole
 		 * is a LISTENING or a CONNECTED socket. Determine that before assigning the state of this socket.
 		 */
 		socketbuflen = SIZEOF(socketptr->bufsiz);
+		/* OSE/SMH - Mac OS X High Sierra (10.13.6) does not seem to accept SO_ACCEPTCONN. */
+#ifndef __APPLE__
 		if (-1 == getsockopt(socketptr->sd, SOL_SOCKET, SO_ACCEPTCONN, &socketptr->bufsiz, &socketbuflen))
 		{
 			save_errno = errno;
@@ -341,7 +343,9 @@ socket_struct *iosocket_create(char *sockaddr, uint4 bfsize, int file_des, boole
 			rts_error_csa(CSA_ARG(NULL) VARLSTCNT(7) ERR_GETSOCKOPTERR, 5,
 				RTS_ERROR_LITERAL("SO_ACCEPTCONN"), save_errno, errlen, errptr);
 			return NULL;
-		} else if (socketptr->bufsiz)
+		} else
+#endif
+		if (socketptr->bufsiz)
 		{
 			socketptr->state = socket_listening;
 			socketptr->passive = TRUE;

@@ -32,15 +32,15 @@ chnd_jmp	=	24
 	.extern gtm_asm_establish
 
 .macro ESTABLISH label
-        call	gtm_asm_establish
-	movq	ctxt(REG_IP), REG64_ACCUM
-	leaq	mdb_condition_handler(REG_IP), REG64_SCRATCH1
-	movq    REG64_SCRATCH1, chnd_ch(%rax)		# ctxt->ch = x
-	addq	$chnd_jmp, REG64_ACCUM			# setjmp(ctxt->jmp)
-	movq	$0, REG64_ARG1
-	movq	REG64_ACCUM, REG64_ARG0
-	call 	__sigsetjmp@PLT
-	incl  	REG32_RET0
+	call	gtm_asm_establish
+	movq	ctxt(%rip), %rax
+	leaq	mdb_condition_handler(%rip), %r11
+	movq    %r11, chnd_ch(%rax)		# ctxt->ch = x
+	addq	$chnd_jmp, %rax			# setjmp(ctxt->jmp)
+	movq	$0, %rsi
+	movq	%rax, %rdi
+	call 	sigsetjmp
+	incl  	%eax
 	jne  	\label
 	REVERT
 	jmp  	return
@@ -48,8 +48,8 @@ chnd_jmp	=	24
 .endm
 
 .macro REVERT
-	movq	ctxt(REG_IP), REG64_ACCUM		# active_ch = ctxt->save_active_c
-	movq	chnd_save_active(REG64_ACCUM), REG64_ACCUM
-	movq	REG64_ACCUM, active_ch(REG_IP)
-	subq  	$chnd_size, ctxt(REG_IP)		# ctxt--
+	movq	ctxt(%rip), %rax		# active_ch = ctxt->save_active_c
+	movq	chnd_save_active(%rax), %rax
+	movq	%rax, active_ch(%rip)
+	subq  	$chnd_size, ctxt(%rip)		# ctxt--
 .endm

@@ -194,6 +194,16 @@ void extract_signal_info(int sig, siginfo_t *info, gtm_sigcontext_t *context, gt
 					gtmsi->infotype |= GTMSIGINFO_ILOC;
 				}
 				break;
+#  elif defined(__APPLE__)
+				gtmsi->subcode = info->si_code;
+				gtmsi->bad_vadr = info->si_addr;
+				gtmsi->infotype |= GTMSIGINFO_BADR;
+				if (context != NULL)
+				{
+					/*TODO gtmsi->int_iadr = (caddr_t)context->uc_mcontext.gregs[REG_EIP];*/
+					gtmsi->infotype |= GTMSIGINFO_ILOC;
+				}
+				break;
 #  else
 #  error "Unsupported Platform"
 #  endif

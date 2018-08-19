@@ -25,11 +25,13 @@
 
 ENTRY	opp_indfun
 	putframe
-	addq	$8, REG_SP		# burn return PC
+	addq	$8, %rsp		# burn return PC
 	CHKSTKALIGN			# Verify stack alignment
 	call	op_indfun
 	getframe
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

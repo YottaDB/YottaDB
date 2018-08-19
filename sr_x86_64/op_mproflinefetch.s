@@ -34,17 +34,19 @@
 	# Since this routine pops its return address off the stack, the stack becomes 16 byte aligned. Verify that.
 	#
 ENTRY	op_mproflinefetch
-	movq	frame_pointer(REG_IP), REG64_ACCUM
-	popq	msf_mpc_off(REG64_ACCUM)		# Save incoming return PC in frame_pointer->mpc
-	movq	REG_PV, msf_ctxt_off(REG64_ACCUM)	# Save linkage pointer
+	movq	frame_pointer(%rip), %rax
+	popq	msf_mpc_off(%rax)		# Save incoming return PC in frame_pointer->mpc
+	movq	%r15, msf_ctxt_off(%rax)	# Save linkage pointer
 	CHKSTKALIGN					# Verify stack alignment
-	movb    $0, REG8_ACCUM				# No variable length arguments
+	movb    $0, %al				# No variable length arguments
 	call	gtm_fetch
 	call	pcurrpos
 	call	stack_leak_check
-	movq	frame_pointer(REG_IP), REG64_ACCUM
-	pushq	msf_mpc_off(REG64_ACCUM)		# Push return address back on stack for return
+	movq	frame_pointer(%rip), %rax
+	pushq	msf_mpc_off(%rax)		# Push return address back on stack for return
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

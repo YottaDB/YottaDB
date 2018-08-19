@@ -17,7 +17,11 @@ GBLDEF int4	gtm_os_page_size;
 
 void get_page_size(void)
 {
+	#ifndef __APPLE__
 	gtm_os_page_size = getpagesize();
+	#else
+	gtm_os_page_size = sysconf(_SC_PAGESIZE);
+	#endif
 
 	return;
 }

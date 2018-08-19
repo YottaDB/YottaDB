@@ -29,14 +29,16 @@
 # Since this is a leaf routine (makes no calls), the stack frame alignment is not important so is not adjusted
 # or tested. Should that change, the alignment should be fixed and implement use of the CHKSTKALIGN macro made.
 #
-ENTRY op_restartpc
-	movq	(REG_SP), REG64_ACCUM
-	subq	$6, REG64_ACCUM 				# XFER call size is constant
-	movq	REG64_ACCUM, restart_pc(REG_IP)
-	movq	frame_pointer(REG_IP), REG64_ACCUM
-	movq	msf_ctxt_off(REG64_ACCUM), REG64_SCRATCH1
-	movq	REG64_SCRATCH1, restart_ctxt(REG_IP)
+ENTRY	op_restartpc
+	movq	(%rsp), %rax
+	subq	$6, %rax 				# XFER call size is constant
+	movq	%rax, restart_pc(%rip)
+	movq	frame_pointer(%rip), %rax
+	movq	msf_ctxt_off(%rax), %r11
+	movq	%r11, restart_ctxt(%rip)
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

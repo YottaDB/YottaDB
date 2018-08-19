@@ -18,83 +18,9 @@
 #  for the GNU gas x86-64 assembler version
 #-----------------------------------------------
 
-/* Register definitions */
+.extern	underr
+.extern	underr_strict
 
-/* Registers which we expect value to be preserved! Callee saves */
-REG_IP			=	%rip
-REG_SP			=	%rsp
-
-REG_RET0		=	%rax
-REG_RET1		=	%r10
-REG64_RET0		=	%rax
-REG64_RET1		=	%r10
-REG32_RET0		=	%eax
-REG32_RET1		=	%r10d
-
-REG64_ACCUM		=	%rax
-REG32_ACCUM		=	%eax
-REG16_ACCUM		=	%ax
-REG8_ACCUM		=	%al
-REG_XFER_TABLE		=	%rbx
-
-REG_FRAME_POINTER	=	%rbp
-C_FRAME_POINTER		=	%rbp
-
-REG_PV			=	%r15
-REG_FRAME_TMP_PTR	=	%r14
-REG_FRAME_VAR_PTR	=	%r13
-REG_LITERAL_BASE	=	%r12
-
-REG64_ARG0		=	%rdi
-REG64_ARG1		=	%rsi
-REG64_ARG2		=	%rdx
-REG64_ARG3		=	%rcx
-REG64_ARG4		=	%r8
-REG64_ARG5		=	%r9
-#REG64_SCRATCH0		=	%r10     # Note same as REG64_RET1
-REG64_SCRATCH1		=	%r11
-
-REG64_OUT_ARG0		=	%rdi
-REG64_OUT_ARG1		=	%rsi
-REG64_OUT_ARG2		=	%rdx
-REG64_OUT_ARG3		=	%rcx
-REG64_OUT_ARG4		=	%r8
-REG64_OUT_ARG5		=	%r9
-
-REG32_ARG0		=	%edi
-REG32_ARG1		=	%esi
-REG32_ARG2		=	%edx
-REG32_ARG3		=	%ecx
-REG32_ARG4		=	%r8d
-REG32_ARG5		=	%r9d
-#REG32_SCRATCH0		=	%r10d
-REG32_SCRATCH1		=	%r11d
-
-REG16_ARG0		=	%di
-REG16_ARG1		=	%si
-REG16_ARG2		=	%dx
-REG16_ARG3		=	%cx
-REG16_ARG4		=	%r8w
-REG16_ARG5		=	%r9w
-#REG16_SCRATCH0		=	%r10w
-REG16_SCRATCH1		=	%r11w
-
-REG8_ARG0		=	%dil
-REG8_ARG1		=	%sil
-REG8_ARG2		=	%dl
-REG8_ARG3		=	%cl
-REG8_ARG4		=	%r8b
-REG8_ARG5		=	%r9b
-#REG8_SCRATCH0		=	%r10b
-REG8_SCRATCH1		=	%r11b
-
-
-REG32_OUT_ARG0		=	%edi
-REG32_OUT_ARG1		=	%esi
-REG32_OUT_ARG2		=	%edx
-REG32_OUT_ARG3		=	%ecx
-REG32_OUT_ARG4		=	%r8d
-REG32_OUT_ARG5		=	%r9d
 
 msf_rvector_off		=	0
 msf_l_symtab_off	=	8
@@ -145,54 +71,54 @@ ARG_SAVE_OFFSET            =   REG_XFER_TABLE_SAVE_OFF - 8
 ARG_COUNT_OFFSET	   =   ARG_SAVE_OFFSET - (8 * NO_REG_SAVED)
 
 .macro save_callee_saved
-        movq    %r12, ARG_SAVE_OFFSET(REG_SP)
-        movq    %r13, ARG_SAVE_OFFSET-8(REG_SP)
-        movq    %r14, ARG_SAVE_OFFSET-16(REG_SP)
-        movq    %r15, ARG_SAVE_OFFSET-24(REG_SP)
-        movq    %rbx, ARG_SAVE_OFFSET-32(REG_SP)
+        movq    %r12, ARG_SAVE_OFFSET(%rsp)
+        movq    %r13, ARG_SAVE_OFFSET-8(%rsp)
+        movq    %r14, ARG_SAVE_OFFSET-16(%rsp)
+        movq    %r15, ARG_SAVE_OFFSET-24(%rsp)
+        movq    %rbx, ARG_SAVE_OFFSET-32(%rsp)
 .endm
 
 .macro restore_callee_saved
-        movq    ARG_SAVE_OFFSET-32(REG_SP), %rbx
-        movq    ARG_SAVE_OFFSET-24(REG_SP), %r15
-        movq    ARG_SAVE_OFFSET-16(REG_SP), %r14
-        movq    ARG_SAVE_OFFSET-8(REG_SP), %r13
-        movq    ARG_SAVE_OFFSET(REG_SP), %r12
+        movq    ARG_SAVE_OFFSET-32(%rsp), %rbx
+        movq    ARG_SAVE_OFFSET-24(%rsp), %r15
+        movq    ARG_SAVE_OFFSET-16(%rsp), %r14
+        movq    ARG_SAVE_OFFSET-8(%rsp), %r13
+        movq    ARG_SAVE_OFFSET(%rsp), %r12
 .endm
 
 .macro putframe
-	movq	frame_pointer(%rip), REG_FRAME_POINTER
-	movq	REG_FRAME_TMP_PTR, msf_temps_ptr_off(REG_FRAME_POINTER)
-	movq	REG_FRAME_VAR_PTR, msf_l_symtab_off(REG_FRAME_POINTER)
-	movq	REG_LITERAL_BASE, msf_literal_ptr_off(REG_FRAME_POINTER)
-	movq	REG_PV, msf_ctxt_off(REG_FRAME_POINTER)
-	movq	(%rsp), REG64_SCRATCH1
-	movq	REG64_SCRATCH1, msf_mpc_off(REG_FRAME_POINTER)
+	movq	frame_pointer(%rip), %rbp
+	movq	%r14, msf_temps_ptr_off(%rbp)
+	movq	%r13, msf_l_symtab_off(%rbp)
+	movq	%r12, msf_literal_ptr_off(%rbp)
+	movq	%r15, msf_ctxt_off(%rbp)
+	movq	(%rsp), %r11
+	movq	%r11, msf_mpc_off(%rbp)
 .endm
 
-.extern	error_return
+.extern	_error_return
 
 .macro getframe
-	movq	frame_pointer(%rip), REG_FRAME_POINTER
-	movb	msf_flags_off(REG_FRAME_POINTER), REG8_SCRATCH1
-	andb	$SFF_ETRAP_ERR, REG8_SCRATCH1
-	jz	lab1\@
+	movq	frame_pointer(%rip), %rbp
+	movb	msf_flags_off(%rbp), %r11b
+	andb	$SFF_ETRAP_ERR, %r11b
+	jz	1f
 	call	error_return
-	movq	frame_pointer(%rip), REG_FRAME_POINTER
-lab1\@:
-	movq	msf_temps_ptr_off(REG_FRAME_POINTER), REG_FRAME_TMP_PTR
-	movq	msf_l_symtab_off(REG_FRAME_POINTER), REG_FRAME_VAR_PTR
-	movq	msf_literal_ptr_off(REG_FRAME_POINTER), REG_LITERAL_BASE
-	movq	msf_ctxt_off(REG_FRAME_POINTER), REG_PV
-	pushq	msf_mpc_off(REG_FRAME_POINTER)
+	movq	frame_pointer(%rip), %rbp
+1:
+	movq	msf_temps_ptr_off(%rbp), %r14
+	movq	msf_l_symtab_off(%rbp), %r13
+	movq	msf_literal_ptr_off(%rbp), %r12
+	movq	msf_ctxt_off(%rbp), %r15
+	pushq	msf_mpc_off(%rbp)
 .endm
 
 .macro	pullstack size=8
-	addq	$\size, REG_SP
+	addq	$\size, %rsp
 .endm
 
 .macro	resetstack size=8
-	subq	$\size, REG_SP
+	subq	$\size, %rsp
 .endm
 
 #

@@ -369,6 +369,7 @@ uint4	 gdsfilext(uint4 blocks, uint4 filesize, boolean_t trans_in_prog)
 	CHECK_TN(cs_addrs, cs_data, cs_data->trans_hist.curr_tn);	/* can issue rts_error TNTOOLARGE */
 	new_total = old_total + new_blocks;
 	new_eof = BLK_ZERO_OFF(cs_data->start_vbn) + ((off_t)new_total * cs_data->blk_size);
+#if !defined(__APPLE__)
 	if (!cs_data->defer_allocate)
 	{
 		new_size = new_eof + cs_data->blk_size;
@@ -405,6 +406,7 @@ uint4	 gdsfilext(uint4 blocks, uint4 filesize, boolean_t trans_in_prog)
 			return (uint4)(NO_FREE_SPACE);
 		}
 	}
+#	endif
 	save_errno = db_write_eof_block(udi, udi->fd, cs_data->blk_size, new_eof, &(TREF(dio_buff)));
 	if ((ENOSPC == save_errno) && IS_GTM_IMAGE)
 		save_errno = extend_wait_for_write(udi, cs_data->blk_size, new_eof);
@@ -578,10 +580,7 @@ uint4	 gdsfilext(uint4 blocks, uint4 filesize, boolean_t trans_in_prog)
 	{
 		send_msg_csa(CSA_ARG(cs_addrs) VARLSTCNT(7) ERR_DBFILEXT, 5, DB_LEN_STR(gv_cur_region), blocks, new_total,
 			&curr_tn);
-		if ((NULL != gv_cur_region) && (NULL != gv_cur_region->dyn.addr) && (NULL != gv_cur_region->dyn.addr->fname))
-			db_file_name = (char *)gv_cur_region->dyn.addr->fname;
-		else
-			db_file_name = "";
+		db_file_name = (char *)gv_cur_region->dyn.addr->fname;
 		warn_db_sz(db_file_name, blocks, new_total, MAXTOTALBLKS(cs_data));
 	}
 	return (SS_NORMAL);

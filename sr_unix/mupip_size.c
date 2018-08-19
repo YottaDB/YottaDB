@@ -3,7 +3,7 @@
  * Copyright (c) 2012-2018 Fidelity National Information	*
  * Services, Inc. and/or its subsidiaries. All rights reserved.	*
  *								*
- * Copyright (c) 2017 YottaDB LLC. and/or its subsidiaries.	*
+ * Copyright (c) 2017-2018 YottaDB LLC. and/or its subsidiaries.*
  * All rights reserved.						*
  *								*
  *	This source code contains the intellectual property	*
@@ -214,10 +214,7 @@ void mupip_size(void)
 		if ((NULL != tcsa) && (NULL != tcsa->ti) && (0 != tcsa->ti->total_blks) && (NULL != tcsa->hdr)
 			&& (0 !=  MAXTOTALBLKS(tcsa->hdr)))
 		{
-			if ((NULL != grlist->reg->dyn.addr) && (NULL != grlist->reg->dyn.addr->fname))
-				db_file_name = (char *)grlist->reg->dyn.addr->fname;
-			else
-				db_file_name = "";
+			db_file_name = (char *)grlist->reg->dyn.addr->fname;
 			warn_db_sz(db_file_name, 0, tcsa->ti->total_blks, MAXTOTALBLKS(tcsa->hdr));
 		}
 	}

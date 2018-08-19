@@ -45,7 +45,7 @@ typedef struct tag_abs_time
 
 /* Type that corresponds to the tv_usec field in a timeval struct.  Valid across all platforms */
 #if defined(__linux__) || defined(__ia64) || defined(__sparc) || defined(_AIX) || defined(__MVS__) \
-|| defined(__CYGWIN__)
+|| defined(__CYGWIN__) || defined(__APPLE__)
     typedef     suseconds_t     gtm_tv_usec_t;
 #elif defined(__hppa)
     typedef     long            gtm_tv_usec_t;

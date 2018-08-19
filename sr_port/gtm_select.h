@@ -24,7 +24,7 @@
 #elif	defined(__sparc) || defined(__MVS__)
 #include <sys/time.h>
 
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>

@@ -55,7 +55,7 @@ typedef struct textElemStruct
    the algorithms in gtm_text_alloc.c with ones not based on the buddy system could
    potentially alleviate these efficiency differences.
 */
-#if defined(__linux__) || defined(__osf__) || defined(__MVS__) || defined(__CYGWIN__)
+#if defined(__linux__) || defined(__osf__) || defined(__MVS__) || defined(__CYGWIN__) || defined(__APPLE__)
 #  define GTM_TEXT_ALLOC(x) gtm_text_alloc(x)
 #  define GTM_TEXT_FREE(x) gtm_text_free(x)
 void *gtm_text_alloc(size_t size);

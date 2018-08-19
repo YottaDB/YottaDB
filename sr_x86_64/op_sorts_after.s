@@ -36,14 +36,16 @@
 	.extern	sorts_after
 
 ENTRY	op_sorts_after
-	subq	$8, REG_SP				# Bump stack for 16 byte alignment
+	subq	$8, %rsp				# Bump stack for 16 byte alignment
 	CHKSTKALIGN					# Verify stack alignment
-	movq	REG64_RET1, REG64_ARG1
-	movq	REG64_RET0, REG64_ARG0
+	movq	%r10, %rsi
+	movq	%rax, %rdi
 	call	sorts_after
-	addq	$8, REG_SP				# Remove stack alignment bump
-	cmpl	$0, REG32_ACCUM				# Set flags according to result from
+	addq	$8, %rsp				# Remove stack alignment bump
+	cmpl	$0, %eax				# Set flags according to result from
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

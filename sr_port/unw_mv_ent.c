@@ -499,6 +499,9 @@ void unw_mv_ent(mv_stent *mv_st_ent)
 			restart_ctxt = mv_st_ent->mv_st_cont.mvs_rstrtpc.restart_ctxt_save;
 			return;
 		case MVST_MRGZWRSV:
+			/* Note: The below code restores what was saved in PUSH_MVST_MRGZWRSV_IF_NEEDED.
+			 *       Ensure the two are kept in sync.
+			 */
 			merge_args = mv_st_ent->mv_st_cont.mvs_mrgzwrsv.save_merge_args;
 			zwrtacindx = mv_st_ent->mv_st_cont.mvs_mrgzwrsv.save_zwrtacindx;
 			if (NULL != mglvnp)
@@ -507,6 +510,7 @@ void unw_mv_ent(mv_stent *mv_st_ent)
 				FREEIFALLOC(mglvnp->gblp[1]);
 				free(mglvnp);
 			}
+			TREF(in_zwrite) = mv_st_ent->mv_st_cont.mvs_mrgzwrsv.save_in_zwrite;
 			mglvnp = mv_st_ent->mv_st_cont.mvs_mrgzwrsv.save_mglvnp;
 			if (NULL != lvzwrite_block)
 			{

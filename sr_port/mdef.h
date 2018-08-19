@@ -358,8 +358,8 @@ typedef struct
  * initialize literal_ptr field apppropriately.
  *
  */
-#if defined(__alpha) || defined(_AIX) || defined(__hpux) || defined(__sparc) || defined(__MVS__) || (defined(__linux__) &&  \
-	(defined(__ia64) || defined(__x86_64__) || defined(__s390__) || defined(__armv6l__) || defined(__armv7l__)))
+#if defined(__alpha) || defined(_AIX) || defined(__hpux) || defined(__sparc) || defined(__MVS__) || defined(__APPLE__) || \
+	(defined(__linux__) && (defined(__ia64) || defined(__x86_64__) || defined(__s390__) || defined(__armv6l__) || defined(__armv7l__)))
 #	define HAS_LITERAL_SECT
 #endif
 

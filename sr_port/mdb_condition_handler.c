@@ -293,15 +293,12 @@ CONDITION_HANDLER(mdb_condition_handler)
 	MDB_START;
 	assert(FALSE == in_gvcst_incr);	/* currently there is no known case where this can be TRUE at this point */
 	in_gvcst_incr = FALSE;	/* reset this just in case gvcst_incr/gvcst_put failed to do a good job of resetting */
-	if ((SUCCESS != SEVERITY) && (INFO != SEVERITY))
-	{
-		inctn_opcode = inctn_invalid_op;
-		/* Ideally merge should have a condition handler to reset followings, but generated code can call other routines
-		 * during MERGE command (MERGE command invokes multiple op-codes depending on source vs target). So it is not
-		 * easy to establish a condition handler there. Easy solution is following one line code.
-		 */
-		NULLIFY_MERGE_ZWRITE_CONTEXT;
-	}
+	inctn_opcode = inctn_invalid_op;
+	/* Ideally merge should have a condition handler to reset followings, but generated code can call other routines
+	 * during MERGE command (MERGE command invokes multiple op-codes depending on source vs target). So it is not
+	 * easy to establish a condition handler there. Easy solution is following one line code.
+	 */
+	NULLIFY_MERGE_ZWRITE_CONTEXT;
 	if ((int)ERR_TPRETRY == SIGNAL)
 	{
 		lcl_error_frame = error_frame;

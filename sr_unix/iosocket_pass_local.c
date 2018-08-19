@@ -35,7 +35,10 @@
 #include "error.h"
 
 #define MAX_PASS_FDS			256
-#define PID_CHECKING_SUPPORTED		defined(__linux__) || defined(__sun) || defined(_AIX)
+
+#if defined(__linux__) || defined(__sun) || defined(_AIX)
+#define PID_CHECKING_SUPPORTED
+#endif
 
 #define RECVALL(FD, BUF, BUFLEN, RVAL)		XFERALL(recv, FD, BUF, BUFLEN, RVAL)
 #define SENDALL(FD, BUF, BUFLEN, RVAL)		XFERALL(send, FD, BUF, BUFLEN, RVAL)
@@ -172,7 +175,7 @@ void iosocket_pass_local(io_desc *iod, pid_t pid, int4 msec_timeout, int argcnt,
 	ESTABLISH_GTMIO_CH(&iod->pair, ch_set);
 	ENSURE_PASS_SOCKET(socketptr);
 	out_of_time = FALSE;
-#	if PID_CHECKING_SUPPORTED
+#	ifdef PID_CHECKING_SUPPORTED
 	if (-1 != pid)
 	{
 		peerpid = get_peer_pid(socketptr->sd);
@@ -377,7 +380,7 @@ void iosocket_accept_local(io_desc *iod, mval *handlesvar, pid_t pid, int4 msec_
 	ESTABLISH_GTMIO_CH(&iod->pair, ch_set);
 	ENSURE_PASS_SOCKET(socketptr);
 	out_of_time = FALSE;
-#	if PID_CHECKING_SUPPORTED
+#	ifdef PID_CHECKING_SUPPORTED
 	if (-1 != pid)
 	{
 		peerpid = get_peer_pid(socketptr->sd);

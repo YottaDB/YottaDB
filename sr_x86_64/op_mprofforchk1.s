@@ -24,12 +24,14 @@
 # This is the M profiling version which calls different routine(s) for M profiling purposes.
 #
 ENTRY	op_mprofforchk1
-	movq    (REG_SP), REG64_ARG0		# Send return address to forchkhandler
-	subq	$8, REG_SP			# Bump stack for 16 byte alignment
+	movq    (%rsp), %rdi		# Send return address to forchkhandler
+	subq	$8, %rsp			# Bump stack for 16 byte alignment
 	CHKSTKALIGN				# Verify stack alignment
 	call	forchkhandler
-	addq	$8, REG_SP			# Remove stack alignment bump
+	addq	$8, %rsp			# Remove stack alignment bump
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

@@ -12,7 +12,6 @@
  *								*
  ****************************************************************/
 
-#define CODEBUF_TYPE	char
 #define CALL_SIZE	12
 #define EXTRA_INST	0
 #define EXTRA_INST_SIZE	0

@@ -46,7 +46,7 @@
 #  define memcpy(TARGET, SRC, LEN) gtm_memcpy_validate_and_execute((void *)(TARGET), (const void *)(SRC), (LEN))
 #endif
 /* The strnlen() function is POSIX-2008 so not widely avaiable yet so use it or our own critter as appropriate */
-#if (defined(__linux__) || defined(AIX))
+#if (defined(__linux__) || defined(AIX)) || defined(__APPLE__)
 # define STRNLEN(str, maxlen, rslt) rslt = strnlen(str, maxlen)
 #else
 # define STRNLEN(str, maxlen, rslt)						\

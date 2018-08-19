@@ -18,7 +18,8 @@
 # CMake 2.8.4 introduced LINK_DEPENDS target property
 # CMake 2.8.4 introduced generator expressions in custom commands
 # CMake 2.8.5 introduced use of C compiler as the assembler
-cmake_minimum_required(VERSION 2.8.5)
+# CMake 2.8.12 Adds MacOSX RPATH
+cmake_minimum_required(VERSION 2.8.12)
 project(YDB C ASM)
 
 # Max optimization level is -O2
@@ -42,7 +43,11 @@ endif()
 # If CMAKE_BUILD_TYPE is set to Debug, then CMAKE_C_FLAGS_DEBUG variable contents will be added at the end of
 # CMAKE_C_FLAGS during compilation (likewise with CMAKE_ASM_FLAGS_DEBUG). Keep these debug variables defined and ready.
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG")
-set(CMAKE_ASM_FLAGS_DEBUG "${CMAKE_ASM_FLAGS_DEBUG} -Wa,--defsym,DEBUG=1")
+if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+  set(CMAKE_ASM_FLAGS_DEBUG "${CMAKE_ASM_FLAGS_DEBUG}")
+elseif("${CMAKE_C_COMPILER_ID}" MATCHES "GNU")
+  set(CMAKE_ASM_FLAGS_DEBUG "${CMAKE_ASM_FLAGS_DEBUG} -Wa,--defsym,DEBUG=1")
+endif()
 
 set(install_permissions_script
   OWNER_READ OWNER_EXECUTE OWNER_WRITE
@@ -72,6 +77,8 @@ elseif("${CMAKE_SYSTEM_NAME}" MATCHES "AIX")
   include(sr_aix/platform.cmake)
 elseif("${CMAKE_SYSTEM_NAME}" MATCHES "SunOS")
   include(sr_sun/platform.cmake)
+elseif("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
+  include(sr_darwin/platform.cmake)
 else()
   message(FATAL_ERROR "--> OS = ${CMAKE_SYSTEM_NAME} / ARCH = ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
@@ -206,10 +213,19 @@ set_source_list(gtcm_play        gtcm_play dlopen_libyottadb)
 set_source_list(gtcm_server      gtcm_server dlopen_libyottadb)
 set_source_list(gtcm_shmclean    gtcm_shmclean dlopen_libyottadb)
 set_source_list(gtmsecshr        gtmsecshr_wrapper)
+if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+        set_source_list(gtmsecshr_real   gtm_icu)
+endif()
 set_source_list(gtmsecshr_real   gtmsecshr)
 set_source_list(libgtmcrypt      gtmcrypt_ref gtmcrypt_pk_ref gtmcrypt_dbk_ref gtmcrypt_sym_ref gtmcrypt_util)
 set_source_list(libgtmcrypt      ydb_getenv minimal_gbldefs)
+if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+        set_source_list(libgtmtls   minimal_gbldefs ydb_getenv)
+endif()
 set_source_list(libgtmtls        gtm_tls_impl gtmcrypt_util)
+if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+  set_source_list(libyottadb       gtm_icu tpdefs repl_errno)
+endif()
 set_source_list(libyottadb       gtm_main mupip_main mupip_cmd dse_main dse_cmd lke_main lke_cmd)
 set_source_list(libyottadb       gtcm_play_main omi_srvc_xct omi_extstr)
 set_source_list(libyottadb       gtcm_server_main gtcm_gnp_server_main gtcm_gnp_clitab gtcm_shmclean_main)
@@ -362,11 +378,22 @@ add_custom_target(gen_gtm_threadgbl_deftypes
 foreach(exp ydbexe yottadb)
   set(out ${exp}_symbols.export)
   set(in ${YDB_SOURCE_DIR}/sr_unix/${exp}_symbols.exp)
-  add_custom_command(
-    OUTPUT ${out}
-    DEPENDS ${in} gen_gtm_threadgbl_deftypes
-    COMMAND tcsh -f ${YDB_SOURCE_DIR}/sr_linux/genexport.csh ${in} ${out}
-    )
+
+  # Add underscores to symbols for Mac OS X
+  if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
+    add_custom_command(
+      OUTPUT ${out}
+      DEPENDS ${in} gen_gtm_threadgbl_deftypes
+      COMMAND tcsh -f ${YDB_SOURCE_DIR}/sr_linux/genexport.csh ${in} ${out}
+      COMMAND sed 's/^/_/' ${in} > ${out}
+      )
+  else()
+    add_custom_command(
+      OUTPUT ${out}
+      DEPENDS ${in} gen_gtm_threadgbl_deftypes
+      COMMAND tcsh -f ${YDB_SOURCE_DIR}/sr_linux/genexport.csh ${in} ${out}
+      )
+  endif()
 endforeach()
 
 add_custom_target(gen_export DEPENDS ydbexe_symbols.export yottadb_symbols.export)
@@ -389,7 +416,11 @@ endif()
 
 function(add_executable target)
   _add_executable(${target} ${ARGN})
-  set_target_properties(${target} PROPERTIES LINK_FLAGS "-Wl,-Map=${target}.map")
+  if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+    set_target_properties(${target} PROPERTIES LINK_FLAGS "-Wl,-map,${target}.map")
+  elseif("${CMAKE_C_COMPILER_ID}" MATCHES "GNU")
+    set_target_properties(${target} PROPERTIES LINK_FLAGS "-Wl,-Map=${target}.map")
+  endif()
   # Since all utilities now dlopen() libyottadb.so at startup, add a dependency to not build the utilities
   # until libyottadb.so was built. And that in turn relies on threadgbl_deftypes being built so add that too.
   add_dependencies(${target} libyottadb gen_gtm_threadgbl_deftypes)
@@ -441,11 +472,22 @@ add_executable(ftok ${ftok_SOURCES})
 
 add_library(libyottadb MODULE ${libyottadb_SOURCES})
 set_property(TARGET libyottadb PROPERTY OUTPUT_NAME yottadb)
+
+if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
+  set_target_properties(libyottadb PROPERTIES SUFFIX ".dylib")
+endif()
 target_link_libraries(libyottadb libmumps)
-set_target_properties(libyottadb PROPERTIES
+if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+  set_target_properties(libyottadb PROPERTIES
+  LINK_FLAGS "${libyottadb_link} -Wl,-map,libyottadb.map"
+  LINK_DEPENDS "${libyottadb_dep}"
+  )
+elseif("${CMAKE_C_COMPILER_ID}" MATCHES "GNU")
+  set_target_properties(libyottadb PROPERTIES
   LINK_FLAGS "${libyottadb_link} -Wl,-Map=libyottadb.map"
   LINK_DEPENDS "${libyottadb_dep}"
   )
+endif()
 add_dependencies(libyottadb gen_export)
 add_dependencies(mumps libyottadb)
 
@@ -470,19 +512,28 @@ endforeach()
 
 # Library=GCRYPT Algorithm=AES256CFB
 include_directories (/usr/local/ssl/include)
-add_library(libgtmcrypt_gcrypt_AES256CFB.so MODULE ${libgtmcrypt_SOURCES})
-set_target_properties(libgtmcrypt_gcrypt_AES256CFB.so PROPERTIES
+add_library(libgtmcrypt_gcrypt_AES256CFB MODULE ${libgtmcrypt_SOURCES})
+set_target_properties(libgtmcrypt_gcrypt_AES256CFB PROPERTIES
   OUTPUT_NAME gtmcrypt_gcrypt_AES256CFB
   COMPILE_DEFINITIONS "USE_GCRYPT -DUSE_AES256CFB"
   LIBRARY_OUTPUT_DIRECTORY ${YDB_BINARY_DIR}/plugin
   )
-add_dependencies(libgtmcrypt_gcrypt_AES256CFB.so gen_gtm_threadgbl_deftypes)
-target_link_libraries(libgtmcrypt_gcrypt_AES256CFB.so ${GPG_LIBRARIES})
-install(TARGETS libgtmcrypt_gcrypt_AES256CFB.so DESTINATION ${YDB_INSTALL_DIR}/plugin)
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+  set_target_properties(libgtmcrypt_gcrypt_AES256CFB PROPERTIES SUFFIX ".dylib")
+else()
+  set_target_properties(libgtmcrypt_gcrypt_AES256CFB PROPERTIES SUFFIX ".so")
+endif()
+add_dependencies(libgtmcrypt_gcrypt_AES256CFB gen_gtm_threadgbl_deftypes)
+target_link_libraries(libgtmcrypt_gcrypt_AES256CFB ${GPG_LIBRARIES})
+install(TARGETS libgtmcrypt_gcrypt_AES256CFB DESTINATION ${YDB_INSTALL_DIR}/plugin)
 
 # Establish the default encryption link
-set(default_encr_link   ${YDB_BINARY_DIR}/plugin/libgtmcrypt.so)
-set(default_encr_target libgtmcrypt_gcrypt_AES256CFB.so)
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+  set(default_encr_link   ${YDB_BINARY_DIR}/plugin/libgtmcrypt.dylib)
+else()
+  set(default_encr_link   ${YDB_BINARY_DIR}/plugin/libgtmcrypt.so)
+endif()
+set(default_encr_target libgtmcrypt_gcrypt_AES256CFB)
 add_custom_command(
   OUTPUT ${default_encr_link}
   COMMAND ${CMAKE_COMMAND} -E create_symlink "${default_encr_target}" "${default_encr_link}"
@@ -499,6 +550,11 @@ set_target_properties(libgtmcrypt_openssl_AES256CFB PROPERTIES
   COMPILE_DEFINITIONS "USE_OPENSSL -DUSE_AES256CFB"
   LIBRARY_OUTPUT_DIRECTORY ${YDB_BINARY_DIR}/plugin
   )
+if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
+  set_target_properties(libgtmcrypt_openssl_AES256CFB PROPERTIES SUFFIX ".dylib")
+else()
+  set_target_properties(libgtmcrypt_openssl_AES256CFB PROPERTIES SUFFIX ".so")
+endif()
 target_link_libraries(libgtmcrypt_openssl_AES256CFB ${GPG_LIBRARIES} ${TLS_LIBRARIES})
 add_dependencies(libgtmcrypt_openssl_AES256CFB gen_gtm_threadgbl_deftypes)
 install(TARGETS libgtmcrypt_openssl_AES256CFB DESTINATION ${YDB_INSTALL_DIR}/plugin)
@@ -509,6 +565,11 @@ set_target_properties(libgtmtls PROPERTIES
   COMPILE_DEFINITIONS "USE_OPENSSL"
   LIBRARY_OUTPUT_DIRECTORY ${YDB_BINARY_DIR}/plugin
   )
+if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
+  set_target_properties(libgtmtls PROPERTIES SUFFIX ".dylib")
+else()
+  set_target_properties(libgtmtls PROPERTIES SUFFIX ".so")
+endif()
 target_link_libraries(libgtmtls ${TLS_LIBRARIES})
 add_dependencies(libgtmtls gen_gtm_threadgbl_deftypes)
 install(TARGETS libgtmtls DESTINATION ${YDB_INSTALL_DIR}/plugin)
@@ -907,7 +968,6 @@ exit")
     list(APPEND targets_to_run ${YDB_BINARY_DIR}/${help}help.dat_noro)
 endforeach()
 #-----------------------------------------------------------------------------
-
 configure_file(sr_unix/gpgagent.tab.in plugin/gpgagent.tab @ONLY)
 set(YDB_TOP "$ENV{PWD}/${YDB_INSTALL_DIR}")
 configure_file(sr_unix/gpgagent.tab.in CMakeFiles/plugin/gpgagent.tab @ONLY)

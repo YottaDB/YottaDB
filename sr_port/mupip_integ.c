@@ -894,10 +894,7 @@ void mupip_integ(void)
 	if ((NULL != tcsa) && (NULL != tcsa->ti) && (0 != tcsa->ti->total_blks) && (NULL != tcsa->hdr)
 		&& (0 != MAXTOTALBLKS(tcsa->hdr)))
 	{
-		if ((NULL != gv_cur_region->dyn.addr) && (NULL != gv_cur_region->dyn.addr->fname))
-                        db_file_name = (char *)gv_cur_region->dyn.addr->fname;
-		else
-			db_file_name = "";
+  		db_file_name = (char *)gv_cur_region->dyn.addr->fname;
 		warn_db_sz(db_file_name, 0, tcsa->ti->total_blks, MAXTOTALBLKS(tcsa->hdr));
 	}
 	mupip_exit(SS_NORMAL);

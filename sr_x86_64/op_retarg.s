@@ -29,18 +29,20 @@
 # But because we wait, we need an initial bump to the C stack pointer to get it aligned.
 #
 # Args:
-#   REG64_RET0 - return value mval
-#   REG64_RET1 - alias value flag
+#   %rax - return value mval
+#   %r10 - alias value flag
 #
 ENTRY	op_retarg
-	subq	$8, REG_SP				# Bump stack for 16 byte alignment
+	subq	$8, %rsp				# Bump stack for 16 byte alignment
 	CHKSTKALIGN					# Verify stack alignment
-	movq	REG64_RET0, REG64_ARG0
-	movq	REG64_RET1, REG64_ARG1
+	movq	%rax, %rdi
+	movq	%r10, %rsi
 	call	unw_retarg
-	addq	$16, REG_SP				# Remove stack alignment bump & burn return address
+	addq	$16, %rsp				# Remove stack alignment bump & burn return address
 	getframe					# Load regs for prev stack frame & push return addr
 	ret
 # Below line is needed to avoid the ELF executable from ending up with an executable stack marking.
 # This marking is not an issue in Linux but is in Windows Subsystem on Linux (WSL) which does not enable executable stack.
+#ifndef __APPLE__
 .section        .note.GNU-stack,"",@progbits
+#endif

@@ -734,7 +734,7 @@ STATICFNDEF int repl_filter_recv_line(char *line, int *line_len, int max_line_le
 						srv_line_end, srv_read_end);
 			exttype = (muextract_type)MUEXTRACT_TYPE(line);
 			/* First 2 bytes must be in valid journal extract format */
-			if ((0 > exttype) || (MUEXT_MAX_TYPES <= exttype))
+			if ((0 > (signed)exttype) || (MUEXT_MAX_TYPES <= (signed)exttype))
 			{
 				assert(WBTEST_EXTFILTER_INDUCE_ERROR == ydb_white_box_test_case_number);
 				return (repl_errno = EREPL_FILTERBADCONV);
